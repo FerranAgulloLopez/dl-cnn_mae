@@ -3,8 +3,8 @@ import abc
 from auxiliary_files.model_methods.model_preprocessing import preprocess_model
 
 
-# Interface for generative models
-class GenerativeModel(metaclass=abc.ABCMeta):
+# Interface for models
+class Model(metaclass=abc.ABCMeta):
 
     @classmethod
     def __subclasshook__(cls, subclass):  # to check that the subclasses follow the interface
@@ -21,9 +21,7 @@ class GenerativeModel(metaclass=abc.ABCMeta):
                 hasattr(subclass, 'save_test_results') and
                 callable(subclass.save_test_results) and
                 hasattr(subclass, 'save_model') and
-                callable(subclass.save_model) and
-                hasattr(subclass, 'encode') and
-                callable(subclass.encode) or
+                callable(subclass.save_model) or
                 NotImplemented)
 
     # Main methods
@@ -64,15 +62,3 @@ class GenerativeModel(metaclass=abc.ABCMeta):
 
     def preprocess_net(self, preprocessing_steps, model):
         preprocess_model(preprocessing_steps, model)
-        
-    @abc.abstractmethod
-    def encode(self, data):
-        raise NotImplementedError('Method not implemented in interface class')
-        
-    @abc.abstractmethod
-    def decode(self, data):
-        raise NotImplementedError('Method not implemented in interface class')
-        
-    @abc.abstractmethod
-    def reconstruct(self, data):
-        raise NotImplementedError('Method not implemented in interface class')

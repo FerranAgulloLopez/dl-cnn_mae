@@ -11,13 +11,12 @@
 		}
 	},
 	"model": {
-		"type": "generative_model",
-		"name": "vae",
+		"name": "default_classifier",
 		"pre": [0],
 		"transforms": {
 			"preprocess": ["WI"]
 		},
-		"description": {
+		"network": {
 			"latent_size": 512,
 			"encoder": {
 				"name": "Encoder64x64TwoBlocks",

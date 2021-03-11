@@ -1,5 +1,5 @@
-from models.types.vae import VAEGenerativeModel
-from models.generative_model import GenerativeModel
+from models.types.classifier import ClassifierModel
+from models.model import Model
 
 
 class ModelFactory:
@@ -8,13 +8,13 @@ class ModelFactory:
         raise Exception('This class can not be instantiated')
 
     @staticmethod
-    def select_model(config, *args) -> GenerativeModel:
+    def select_model(config, *args) -> Model:
         name = config['name']
-        if name == 'vae':
-            model = VAEGenerativeModel(config, *args)
+        if name == 'classifier':
+            model = ClassifierModel(config, *args)
         else:
             raise Exception('The model with name ' + name + ' does not exist')
-        if issubclass(type(model), GenerativeModel):
+        if issubclass(type(model), Model):
             return model
         else:
             raise Exception('The model does not follow the interface definition')
