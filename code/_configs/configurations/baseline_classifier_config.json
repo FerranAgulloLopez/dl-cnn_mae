@@ -1,0 +1,49 @@
+{
+	"data": {
+		"name": "MAMe",
+		"directory": "../MAMe/",
+		"batch_size": 64
+	},
+	"model": {
+		"name": "default_classifier",
+		"pre": [0],
+		"transforms": {
+			"preprocess": ["WI"]
+		},
+		"network": {
+			"latent_size": 512,
+			"encoder": {
+				"name": "Encoder64x64TwoBlocks",
+				"filter_scale": 32
+			},
+			"decoder": {
+				"name": "Decoder64x64ThreeBlocks",
+				"filter_scale": 32
+			}
+		},
+		"train_info": {
+			"number_epochs": 1,
+			"loss_function": {
+				"name": "BetaVae",
+				"beta_kdl": 0,
+				"reduction": "sum",
+				"recon_loss": "mse"
+			},
+			"optimizer": {
+				"name": "Adam",
+				"beta_1": 0.5,
+				"beta_2": 0.999,
+				"learning_rate": {
+					"value": 0.0001,
+					"dynamic": [0]
+				}
+			},
+			"visualize_latent": {
+				"latent_std_mean": 0,
+				"latent_last": [0]
+			}
+		}
+	},
+	"manual_seed": 0,
+	"device": "cpu"
+}
