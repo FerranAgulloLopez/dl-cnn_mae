@@ -50,7 +50,7 @@ def main(config_file: str, output_path: str, visualize: bool):
     data = DataFactory.select_data(config['data'], config['device'])
     data.prepare()
     data.show_info()
-    data.show_examples(visualize, 10, output_path + '/data_examples')
+    # data.show_examples(visualize, 10, output_path + '/data_examples')
     train_loader = data.get_train_loader()
     val_loader = data.get_val_loader()
     test_loader = data.get_test_loader()

@@ -1,5 +1,5 @@
 from data.data import Data
-from data.types.cat_faces import CatFaces
+from data.types.mame import MAMe
 
 class DataFactory:
 
@@ -9,8 +9,8 @@ class DataFactory:
     @staticmethod
     def select_data(config, *args) -> Data:
         name = config['name']
-        if name == 'cat_faces':
-            data = CatFaces(config, *args)
+        if name == 'MAMe':
+            data = MAMe(config, *args)
         else:
             raise Exception('The dataset with name ' + name + ' does not exist')
         if issubclass(type(data), Data):
