@@ -1,4 +1,5 @@
 import abc
+import logging
 
 from torch.utils.data import DataLoader
 
@@ -19,7 +20,9 @@ class Data(metaclass=abc.ABCMeta):
                 hasattr(subclass, 'get_val_loader') and
                 callable(subclass.get_val_loader) and
                 hasattr(subclass, 'get_test_loader') and
-                callable(subclass.get_test_loader) or
+                callable(subclass.get_test_loader) and
+                hasattr(subclass, 'get_data_shape') and
+                callable(subclass.get_data_shape) or
                 NotImplemented)
 
     # Main methods
@@ -44,15 +47,11 @@ class Data(metaclass=abc.ABCMeta):
     def get_test_loader(self) -> DataLoader:
         raise NotImplementedError('Method not implemented in interface class')
 
+    @abc.abstractmethod
+    def get_data_shape(self) -> list:
+        raise NotImplementedError('Method not implemented in interface class')
+
     def show_info(self):
-        print("Train size: " + str(len(self.get_train_loader())) + "\n" +
+        logging.info("Train size: " + str(len(self.get_train_loader())) + "\n" +
               "Val size: " + str(len(self.get_val_loader())) + "\n" +
               "Test size: " + str(len(self.get_test_loader())))
-
-    # def show_examples(self, visualize, number, output_path):
-    #     examples = self.get_train_loader().get_examples(number)
-    #     try:
-    #         m = examples.detach().to('cpu').numpy()
-    #     except:
-    #         m = examples
-    #     show_matrix_of_images(visualize, m, output_path, normalize=True)

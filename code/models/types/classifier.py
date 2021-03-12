@@ -1,4 +1,5 @@
 import torch
+import logging
 import numpy as np
 from time import time
 
@@ -19,13 +20,14 @@ class ClassifierModel(Model):
     def __init__(self, config, data_shape, output_path, device):
         super().__init__(config, data_shape, output_path, device)
         self.config = config
-        self.data_shape = data_shape
+        self.data_shape = data_shape[0]
         self.output_path = output_path
         self.device = device
 
         if config['pre'][0] == 0:
             # do not use a pretrained model
-            self.network = select_net(self.config['network']['name'], data_shape)
+            self.config['network']['output_size'] = data_shape[1]
+            self.network = select_net(self.config['network'], self.data_shape)
         else:
             # use a pretrained model
             raise Exception('Not implemented')
@@ -55,25 +57,25 @@ class ClassifierModel(Model):
             val_time = time() - t
             if self.scheduler:
                 if self.scheduler_loss == 'train':
-                    self.scheduler.step(self.train_loss[number_epoch][0].detach())
+                    self.scheduler.step(self.train_loss[number_epoch].detach())
                 else:
-                    self.scheduler.step(self.val_loss[number_epoch][0].detach())
+                    self.scheduler.step(self.val_loss[number_epoch].detach())
             print(str('====> Epoch: {} \n' +
                       '                Train set loss: {:.6f}; time: {} \n' +
                       '                Val set loss: {:.6f}; time: {}')
-                  .format(number_epoch, self.train_loss[number_epoch][0], train_time, self.val_loss[number_epoch][0],
+                  .format(number_epoch, self.train_loss[number_epoch], train_time, self.val_loss[number_epoch],
                           val_time))
 
     # test the model
     def test(self, test_loader):
-        self.test_loss = torch.from_numpy(np.zeros((1, self.loss_function.output_shape))).to(self.device).detach()
+        self.test_loss = torch.from_numpy(np.zeros(1)).to(self.device).detach()
         if not self.loss_function:
             self.loss_function = select_loss_function(self.train_info['loss_function'], self.device)
 
         t = time()
         self.not_train_epoch(0, test_loader, self.test_loss)
         print('====> Test set loss: {:.6f}; time: {}'
-              .format(self.test_loss[0][0], time() - t))
+              .format(self.test_loss[0], time() - t))
 
     # save train results in disk
     def save_train_results(self, visualize, train_loader, val_loader):
@@ -102,12 +104,12 @@ class ClassifierModel(Model):
     # save model in disk
     def save_model(self):
         if self.device != 'cpu':
-            self.vae_model = self.vae_model.to('cpu')
+            self.network = self.network.to('cpu')
 
-        torch.save(self.vae_model.state_dict(), self.output_path + '/vae_model.p')
+        torch.save(self.network.state_dict(), self.output_path + '/vae_model.p')
 
         if self.device != 'cpu':
-            self.vae_model = self.vae_model.to(self.device)
+            self.network = self.network.to(self.device)
 
     # Auxiliary methods
 
@@ -116,10 +118,8 @@ class ClassifierModel(Model):
         self.train_info = self.config['train_info']
         self.number_epochs = self.train_info['number_epochs']
         self.loss_function = select_loss_function(self.train_info['loss_function'], self.device)
-        self.train_loss = torch.from_numpy(np.zeros((self.number_epochs, self.loss_function.output_shape))).to(
-            self.device).detach()
-        self.val_loss = torch.from_numpy(np.zeros((self.number_epochs, self.loss_function.output_shape))).to(
-            self.device).detach()
+        self.train_loss = torch.from_numpy(np.zeros(self.number_epochs)).to(self.device).detach()
+        self.val_loss = torch.from_numpy(np.zeros(self.number_epochs)).to(self.device).detach()
         self.optimizer = select_optimizer(self.train_info['optimizer'], self.network)
         if self.train_info['optimizer']['learning_rate']['dynamic'][0] == 1:
             self.scheduler = select_scheduler(self.train_info['optimizer']['learning_rate']['dynamic'][1],
@@ -143,7 +143,7 @@ class ClassifierModel(Model):
             self.optimizer.step()
             self.train_loss[number_epoch] = self.train_loss[number_epoch].add(loss.detach().view(1)) # update results' array
 
-        self.train_loss[number_epoch] = self.train_loss[number_epoch].div(train_loader.get_shape()[0]) # update results' array
+        self.train_loss[number_epoch] = self.train_loss[number_epoch].div(len(train_loader)) # update results' array
 
     # preform a not train epoch
     def not_train_epoch(self, number_epoch, data_loader, array):
@@ -155,4 +155,4 @@ class ClassifierModel(Model):
                 loss = self.loss_function.run(output_labels, labels, number_epoch)
                 array[number_epoch] = array[number_epoch].add(loss.detach().view(1)) # update results' array
 
-        array[number_epoch] = array[number_epoch].div(data_loader.get_shape()[0]) # update results' array
+        array[number_epoch] = array[number_epoch].div(len(data_loader)) # update results' array

@@ -1,6 +1,7 @@
 import os
 from PIL import Image
 import pandas as pd
+from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 
 from data.data import Data
@@ -15,7 +16,6 @@ class MAMeDataset(Dataset):
         self.metadata = self.metadata[self.metadata['Subset'] == self.split]
         self.metadata = self.metadata[['Image file', 'Medium']]
         self.metadata['Medium'] = self.metadata.apply(lambda x: key[x['Medium']], axis=1)
-        pass
 
     def __getitem__(self, item):
         image = Image.open(os.path.join(self.root_dir, self.metadata.loc[item, 'Image file'])).convert('RGB')
@@ -32,10 +32,9 @@ class MAMe(Data):
         self.directory = config['directory']
         self.batch_size = config['batch_size']
         self.label_descriptions = {
-            row['description']: row['id']
-            for _, row in pd.read_csv(os.path.join(self.directory, 'MAMe_labels.csv')).iterrows()
+            row['description']: index
+            for index, (_, row) in enumerate(pd.read_csv(os.path.join(self.directory, 'MAMe_labels.csv'), names=["description"], index_col=0).iterrows())
         }
-        pass
 
     def get_train_loader(self) -> DataLoader:
         return DataLoader(
@@ -62,4 +61,4 @@ class MAMe(Data):
         pass
 
     def get_data_shape(self):
-        return 256, 256
+        return [3, 256, 256]

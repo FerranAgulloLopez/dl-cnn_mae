@@ -85,7 +85,7 @@ def replace_outliers(dataset, variance_supported=4, inplace=True, superior_limit
 
 
 def select_band(dataset, band):
-    # pre: dataset shape -> [number_image number_band ...]
+    # pre: dataseta shape -> [number_image number_band ...]
     return np.delete(dataset, [x for x in range(dataset.shape[1]) if x != band], 1)
 
 

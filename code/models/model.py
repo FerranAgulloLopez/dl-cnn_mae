@@ -3,7 +3,7 @@ import abc
 from auxiliary_files.model_methods.model_preprocessing import preprocess_model
 
 
-# Interface for models
+# Interface for configs
 class Model(metaclass=abc.ABCMeta):
 
     @classmethod

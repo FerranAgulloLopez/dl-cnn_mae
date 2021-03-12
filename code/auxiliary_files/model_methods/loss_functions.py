@@ -16,23 +16,23 @@ class LossFunction:
     def visualize_total_losses_chart(self, visualize, filename, output_path, *losses):
         lines = []
         for name, loss in losses:
-            lines.append((loss[:,0], name))
+            lines.append((loss, name))
         compare_multiple_lines(visualize, list(range(0,len(loss))), lines, output_path + '/' + filename)
         
     def visualize_total_losses_file(self, filename, output_path, *losses):
         output = {'results': {}}
         for name, loss in losses:
-            output['results'][name] = {'min_value': float(np.min(loss[:,0])), 'min_epoch': int(np.argmin(loss[:,0]))}
+            output['results'][name] = {'min_value': float(np.min(loss)), 'min_epoch': int(np.argmin(loss))}
         print(output)
         save_json(output_path + '/' + filename, output)
 
 
-class ClassifierLossFunction(LossFunction):
+class DefaultClassifierLossFunction(LossFunction):
     def __init__(self, config, device):
         super().__init__()
         criterion = config['criterion']
-        if criterion == 'cross_entropy':
-            self.criterion = nn.CrossEntropyLoss()
+        if criterion == 'binary_cross_entropy':
+            self.criterion = nn.BCELoss()
         else:
             raise Exception('Loss function criterion not recognized')
         

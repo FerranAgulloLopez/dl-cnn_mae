@@ -1,5 +1,7 @@
 from data.data import Data
 from data.types.mame import MAMe
+from data.types.dummy import DummyData
+
 
 class DataFactory:
 
@@ -11,6 +13,8 @@ class DataFactory:
         name = config['name']
         if name == 'MAMe':
             data = MAMe(config, *args)
+        elif name == 'dummy':
+            data = DummyData(config, *args)
         else:
             raise Exception('The dataset with name ' + name + ' does not exist')
         if issubclass(type(data), Data):

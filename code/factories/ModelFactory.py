@@ -10,7 +10,7 @@ class ModelFactory:
     @staticmethod
     def select_model(config, *args) -> Model:
         name = config['name']
-        if name == 'classifier':
+        if name == 'default_classifier':
             model = ClassifierModel(config, *args)
         else:
             raise Exception('The model with name ' + name + ' does not exist')
