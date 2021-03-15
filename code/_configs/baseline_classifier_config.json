@@ -1,7 +1,9 @@
 {
 	"data": {
 		"name": "MAMe",
-		"directory": "../input/MAMe/",
+		"version": "full",
+		"metadata_directory": "../input/MAMe/",
+		"images_directory": "../input/MAMe/MAMe_data_256/data_256/",
 		"batch_size": 64
 	},
 	"model": {
@@ -15,7 +17,7 @@
             "filter_scale": 16
 		},
 		"train_info": {
-			"number_epochs": 1,
+			"number_epochs": 2,
 			"loss_function": {
 				"name": "DefaultClassifier",
 				"criterion": "binary_cross_entropy"
