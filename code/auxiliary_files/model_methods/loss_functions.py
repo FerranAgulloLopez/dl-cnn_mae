@@ -18,11 +18,25 @@ class LossFunction:
         for name, loss in losses:
             lines.append((loss, name))
         compare_multiple_lines(visualize, list(range(0,len(loss))), lines, output_path + '/' + filename)
+
+    def visualize_total_accuracies_chart(self, visualize, filename, output_path, *accuracies):
+        lines = []
+        for name, accuracy in accuracies:
+            lines.append((accuracy, name))
+        compare_multiple_lines(visualize, list(range(0,len(accuracy))), lines, output_path + '/' + filename,
+                               legend='Accuracy')
         
     def visualize_total_losses_file(self, filename, output_path, *losses):
         output = {'results': {}}
         for name, loss in losses:
             output['results'][name] = {'min_value': float(np.min(loss)), 'min_epoch': int(np.argmin(loss))}
+        print(output)
+        save_json(output_path + '/' + filename, output)
+
+    def visualize_total_accuracies_file(self, filename, output_path, *accuracies):
+        output = {'results': {}}
+        for name, accuracies in accuracies:
+            output['results'][name] = {'max_value': float(np.max(accuracies)), 'max_epoch': int(np.argmax(accuracies))}
         print(output)
         save_json(output_path + '/' + filename, output)
 

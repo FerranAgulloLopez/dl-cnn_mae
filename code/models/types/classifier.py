@@ -61,10 +61,10 @@ class ClassifierModel(Model):
                 else:
                     self.scheduler.step(self.val_loss[number_epoch].detach())
             print(str('====> Epoch: {} \n' +
-                      '                Train set loss: {:.6f}; time: {} \n' +
-                      '                Val set loss: {:.6f}; time: {}')
-                  .format(number_epoch, self.train_loss[number_epoch], train_time, self.val_loss[number_epoch],
-                          val_time))
+                      '                Train set loss: {:.6f}; Train set acc: {:.6f}; time: {} \n' +
+                      '                Val set loss: {:.6f}; Val set acc: {:.6f}; time: {} \n')
+                  .format(number_epoch, self.train_loss[number_epoch], self.train_acc[number_epoch], train_time,
+                          self.val_loss[number_epoch], self.val_acc[number_epoch], val_time))
 
     # test the model
     def test(self, test_loader):
@@ -88,9 +88,17 @@ class ClassifierModel(Model):
             self.loss_function.visualize_total_losses_chart(visualize, 'train_val_losses_chart', self.output_path,
                                                             ('train_loss', self.train_loss.numpy()),
                                                             ('val_loss', self.val_loss.numpy()))
+            self.loss_function.visualize_total_accuracies_chart(visualize, 'train_val_accuracies_chart',
+                                                                self.output_path,
+                                                                ('train_accuracy', self.train_acc.numpy()),
+                                                                ('val_accuracy', self.val_acc.numpy()))
             self.loss_function.visualize_total_losses_file('train_val_losses_file', self.output_path,
                                                            ('train_loss', self.train_loss.numpy()),
                                                            ('val_loss', self.val_loss.numpy()))
+            self.loss_function.visualize_total_accuracies_file('train_val_accuracies_file',
+                                                               self.output_path,
+                                                               ('train_accuracy', self.train_acc.numpy()),
+                                                               ('val_accuracy', self.val_acc.numpy()))
             self.loss_function.visualize_results(visualize, self.output_path, self.train_loss.numpy())
 
     # save test results in disk
@@ -101,6 +109,7 @@ class ClassifierModel(Model):
         with torch.no_grad():
             self.loss_function.visualize_total_losses_file('test_losses_file', self.output_path,
                                                            ('test_loss', self.test_loss.numpy()))
+
     # save model in disk
     def save_model(self):
         if self.device != 'cpu':
@@ -120,6 +129,8 @@ class ClassifierModel(Model):
         self.loss_function = select_loss_function(self.train_info['loss_function'], self.device)
         self.train_loss = torch.from_numpy(np.zeros(self.number_epochs)).to(self.device).detach()
         self.val_loss = torch.from_numpy(np.zeros(self.number_epochs)).to(self.device).detach()
+        self.train_acc = torch.from_numpy(np.zeros(self.number_epochs)).to(self.device).detach()
+        self.val_acc = torch.from_numpy(np.zeros(self.number_epochs)).to(self.device).detach()
         self.optimizer = select_optimizer(self.train_info['optimizer'], self.network)
         if self.train_info['optimizer']['learning_rate']['dynamic'][0] == 1:
             self.scheduler = select_scheduler(self.train_info['optimizer']['learning_rate']['dynamic'][1],
@@ -134,25 +145,58 @@ class ClassifierModel(Model):
     # perform a train epoch
     def train_epoch(self, number_epoch, train_loader):
         self.network.train()
+        outputs = None
+        og_labels = None
+        accs = torch.from_numpy(np.zeros((29,))).to(self.device).detach()
 
-        for index, (train_values, train_labels) in enumerate(train_loader, 0): # iterate data loader
+        for index, (train_values, train_labels) in enumerate(train_loader, 0):  # iterate data loader
             self.optimizer.zero_grad()
             output_labels = self.network(train_values)
+            output_labels_copy = output_labels.detach()
+            if outputs is None or og_labels is None:
+                outputs = np.argmax(output_labels_copy, axis=1)
+                og_labels = np.argmax(train_labels, axis=1)
+            else:
+                outputs = np.concatenate((outputs, np.argmax(output_labels_copy, axis=1)), axis=None)
+                og_labels = np.concatenate((og_labels, np.argmax(train_labels, axis=1)), axis=None)
             loss = self.loss_function.run(output_labels, train_labels, number_epoch)
             loss.backward()
             self.optimizer.step()
-            self.train_loss[number_epoch] = self.train_loss[number_epoch].add(loss.detach().view(1)) # update results' array
+            self.train_loss[number_epoch] = self.train_loss[number_epoch].add(
+                loss.detach().view(1))  # update results' array
 
-        self.train_loss[number_epoch] = self.train_loss[number_epoch].div(len(train_loader)) # update results' array
+        self.train_loss[number_epoch] = self.train_loss[number_epoch].div(len(train_loader))  # update results' array
+        for i in range(np.max(og_labels) + 1):
+            this_label_index = og_labels[og_labels == i]
+            this_label_outputs = outputs[this_label_index]
+            this_label_labels = og_labels[this_label_index]
+            accs[i] = (this_label_outputs == this_label_labels).sum() / len(this_label_labels)
+        self.train_acc[number_epoch] = np.average(accs)
 
     # preform a not train epoch
     def not_train_epoch(self, number_epoch, data_loader, array):
         self.network.eval()
+        outputs = None
+        og_labels = None
+        accs = torch.from_numpy(np.zeros((29,))).to(self.device).detach()
 
         with torch.no_grad():
-            for index, (values, labels) in enumerate(data_loader, 0): # iterate data loader
+            for index, (values, labels) in enumerate(data_loader, 0):  # iterate data loader
                 output_labels = self.network(values)
+                output_labels_copy = output_labels.detach()
+                if outputs is None or og_labels is None:
+                    outputs = np.argmax(output_labels_copy, axis=1)
+                    og_labels = np.argmax(labels, axis=1)
+                else:
+                    outputs = np.concatenate((outputs, np.argmax(output_labels_copy, axis=1)), axis=None)
+                    og_labels = np.concatenate((og_labels, np.argmax(labels, axis=1)), axis=None)
                 loss = self.loss_function.run(output_labels, labels, number_epoch)
-                array[number_epoch] = array[number_epoch].add(loss.detach().view(1)) # update results' array
+                array[number_epoch] = array[number_epoch].add(loss.detach().view(1))  # update results' array
 
-        array[number_epoch] = array[number_epoch].div(len(data_loader)) # update results' array
+        array[number_epoch] = array[number_epoch].div(len(data_loader))  # update results' array
+        for i in range(np.max(og_labels) + 1):
+            this_label_index = og_labels[og_labels == i]
+            this_label_outputs = outputs[this_label_index]
+            this_label_labels = og_labels[this_label_index]
+            accs[i] = (this_label_outputs == this_label_labels).sum() / len(this_label_labels)
+        self.val_acc[number_epoch] = np.average(accs)
