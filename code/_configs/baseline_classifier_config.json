@@ -17,7 +17,7 @@
             "filter_scale": 16
 		},
 		"train_info": {
-			"number_epochs": 2,
+			"number_epochs": 15,
 			"loss_function": {
 				"name": "DefaultClassifier",
 				"criterion": "binary_cross_entropy"

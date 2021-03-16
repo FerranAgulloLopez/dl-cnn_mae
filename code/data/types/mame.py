@@ -52,7 +52,8 @@ class MAMe(Data):
         return DataLoader(
             dataset=MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
                                 key=self.label_descriptions, root_dir=self.images_directory, split='train',
-                                transform=transforms.ToTensor()),
+                                transform=transforms.Compose([transforms.ToTensor(),
+                                                              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])),
             shuffle=True, batch_size=self.batch_size
         )
 
@@ -60,7 +61,8 @@ class MAMe(Data):
         return DataLoader(
             dataset=MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
                                 key=self.label_descriptions, root_dir=self.images_directory, split='test',
-                                transform=transforms.ToTensor()),
+                                transform=transforms.Compose([transforms.ToTensor(),
+                                                              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])),
             shuffle=True, batch_size=self.batch_size
         )
 
@@ -68,7 +70,8 @@ class MAMe(Data):
         return DataLoader(
             dataset=MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
                                 key=self.label_descriptions, root_dir=self.images_directory, split='val',
-                                transform=transforms.ToTensor()),
+                                transform=transforms.Compose([transforms.ToTensor(),
+                                                              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])),
             shuffle=True, batch_size=self.batch_size
         )
 
