@@ -1,4 +1,5 @@
 from time import time
+import sys
 
 import numpy as np
 import torch
@@ -65,6 +66,7 @@ class ClassifierModel(Model):
                       '                Val set loss: {:.6f}; Val set acc: {:.6f}; time: {} \n')
                   .format(number_epoch, self.train_loss[number_epoch], self.train_acc[number_epoch], train_time,
                           self.val_loss[number_epoch], self.val_acc[number_epoch], val_time))
+            sys.stdout.flush()
 
     # test the model
     def test(self, test_loader):
@@ -76,6 +78,7 @@ class ClassifierModel(Model):
         self.not_train_epoch(0, test_loader, self.test_loss)
         print('====> Test set loss: {:.6f}; time: {}'
               .format(self.test_loss[0], time() - t))
+        sys.stdout.flush()
 
     # save train results in disk
     def save_train_results(self, visualize, train_loader, val_loader):

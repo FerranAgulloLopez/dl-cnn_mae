@@ -1,4 +1,6 @@
-import json, csv
+import json
+import csv
+import sys
 import logging
 
 
@@ -16,6 +18,7 @@ def save_json(path, data):
 
 def print_pretty_json(data):
     print(json.dumps(data, indent=4))
+    sys.stdout.flush()
 
 
 def save_csv(file, rows):

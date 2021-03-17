@@ -31,6 +31,7 @@ class LossFunction:
         for name, loss in losses:
             output['results'][name] = {'min_value': float(np.min(loss)), 'min_epoch': int(np.argmin(loss))}
         print(output)
+        sys.stdout.flush()
         save_json(output_path + '/' + filename, output)
 
     def visualize_total_accuracies_file(self, filename, output_path, *accuracies):
@@ -38,6 +39,7 @@ class LossFunction:
         for name, accuracies in accuracies:
             output['results'][name] = {'max_value': float(np.max(accuracies)), 'max_epoch': int(np.argmax(accuracies))}
         print(output)
+        sys.stdout.flush()
         save_json(output_path + '/' + filename, output)
 
 

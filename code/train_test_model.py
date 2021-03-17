@@ -49,6 +49,7 @@ def main(config_file: str, output_path: str, visualize: bool):
     
     # Load data
     print('Loading data')
+    sys.stdout.flush()
     data = DataFactory.select_data(config['data'], config['device'])
     data.prepare()
     data.show_info()
@@ -59,29 +60,34 @@ def main(config_file: str, output_path: str, visualize: bool):
 
     # Load model
     print('\nLoading model')
+    sys.stdout.flush()
     model = ModelFactory.select_model(config['model'], data.get_data_shape(), output_path, config['device'])
     model.show_info()
     model.prepare()
     
     # Train model
     print('\nTraining model')
+    sys.stdout.flush()
     t = time()
     model.train(train_loader, val_loader)
     train_elapsed_time = time() - t
     
     # Test model
     print('\nTesting model')
+    sys.stdout.flush()
     t = time()
     model.test(test_loader)
     test_elapsed_time = time() - t
     
     # Visualize results
     print('\nGenerating visualizations')
+    sys.stdout.flush()
     model.save_train_results(visualize, train_loader, val_loader)
     model.save_test_results(visualize, test_loader)
     
     # Save results and model
     print('\nSaving model')
+    sys.stdout.flush()
     model.save_model()
     
     # Save config

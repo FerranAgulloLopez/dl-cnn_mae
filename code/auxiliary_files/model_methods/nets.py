@@ -1,3 +1,4 @@
+import sys
 import torch
 import torch.nn as nn
 
@@ -14,6 +15,7 @@ class PrintLayer(nn.Module):
 
     def forward(self, x):
         print(self.name + ': -> ', x.shape)
+        sys.stdout.flush()
         return x
 
 
