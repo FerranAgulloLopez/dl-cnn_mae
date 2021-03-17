@@ -153,15 +153,18 @@ class ClassifierModel(Model):
         accs = torch.from_numpy(np.zeros((29,))).to(self.device).detach()
 
         for index, (train_values, train_labels) in enumerate(train_loader, 0):  # iterate data loader
+            train_values = train_values.to(self.device)
+            train_labels = train_labels.to(self.device)
+
             self.optimizer.zero_grad()
             output_labels = self.network(train_values)
             output_labels_copy = output_labels.detach()
             if outputs is None or og_labels is None:
-                outputs = np.argmax(output_labels_copy, axis=1)
-                og_labels = np.argmax(train_labels, axis=1)
+                outputs = torch.argmax(output_labels_copy, 1)
+                og_labels = torch.argmax(train_labels, 1)
             else:
-                outputs = np.concatenate((outputs, np.argmax(output_labels_copy, axis=1)), axis=None)
-                og_labels = np.concatenate((og_labels, np.argmax(train_labels, axis=1)), axis=None)
+                outputs = torch.cat((outputs, torch.argmax(output_labels_copy, 1)))
+                og_labels = torch.cat((og_labels, torch.argmax(train_labels, 1)))
             loss = self.loss_function.run(output_labels, train_labels, number_epoch)
             loss.backward()
             self.optimizer.step()
@@ -169,12 +172,12 @@ class ClassifierModel(Model):
                 loss.detach().view(1))  # update results' array
 
         self.train_loss[number_epoch] = self.train_loss[number_epoch].div(len(train_loader))  # update results' array
-        for i in range(np.max(og_labels) + 1):
+        for i in range(torch.max(og_labels).item() + 1):
             this_label_index = og_labels[og_labels == i]
             this_label_outputs = outputs[this_label_index]
             this_label_labels = og_labels[this_label_index]
             accs[i] = (this_label_outputs == this_label_labels).sum() / len(this_label_labels)
-        self.train_acc[number_epoch] = np.average(accs)
+        self.train_acc[number_epoch] = torch.mean(accs)
 
     # preform a not train epoch
     def not_train_epoch(self, number_epoch, data_loader, array):
@@ -185,21 +188,24 @@ class ClassifierModel(Model):
 
         with torch.no_grad():
             for index, (values, labels) in enumerate(data_loader, 0):  # iterate data loader
+                values = values.to(self.device)
+                labels = labels.to(self.device)
+
                 output_labels = self.network(values)
                 output_labels_copy = output_labels.detach()
                 if outputs is None or og_labels is None:
-                    outputs = np.argmax(output_labels_copy, axis=1)
-                    og_labels = np.argmax(labels, axis=1)
+                    outputs = torch.argmax(output_labels_copy, 1)
+                    og_labels = torch.argmax(labels, 1)
                 else:
-                    outputs = np.concatenate((outputs, np.argmax(output_labels_copy, axis=1)), axis=None)
-                    og_labels = np.concatenate((og_labels, np.argmax(labels, axis=1)), axis=None)
+                    outputs = torch.cat((outputs, torch.argmax(output_labels_copy, 1)))
+                    og_labels = torch.cat((og_labels, torch.argmax(labels, 1)))
                 loss = self.loss_function.run(output_labels, labels, number_epoch)
                 array[number_epoch] = array[number_epoch].add(loss.detach().view(1))  # update results' array
 
         array[number_epoch] = array[number_epoch].div(len(data_loader))  # update results' array
-        for i in range(np.max(og_labels) + 1):
+        for i in range(torch.max(og_labels).item() + 1):
             this_label_index = og_labels[og_labels == i]
-            this_label_outputs = outputs[this_label_index]
+            this_label_outputs = outputs[this_label_index].to(self.device)
             this_label_labels = og_labels[this_label_index]
             accs[i] = (this_label_outputs == this_label_labels).sum() / len(this_label_labels)
-        self.val_acc[number_epoch] = np.average(accs)
+        self.val_acc[number_epoch] = torch.mean(accs)

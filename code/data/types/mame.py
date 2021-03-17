@@ -54,7 +54,7 @@ class MAMe(Data):
                                 key=self.label_descriptions, root_dir=self.images_directory, split='train',
                                 transform=transforms.Compose([transforms.ToTensor(),
                                                               transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])),
-            shuffle=True, batch_size=self.batch_size
+            shuffle=True, batch_size=self.batch_size, pin_memory=True
         )
 
     def get_test_loader(self) -> DataLoader:
@@ -63,7 +63,7 @@ class MAMe(Data):
                                 key=self.label_descriptions, root_dir=self.images_directory, split='test',
                                 transform=transforms.Compose([transforms.ToTensor(),
                                                               transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])),
-            shuffle=True, batch_size=self.batch_size
+            shuffle=True, batch_size=self.batch_size, pin_memory=True
         )
 
     def get_val_loader(self) -> DataLoader:
@@ -72,7 +72,7 @@ class MAMe(Data):
                                 key=self.label_descriptions, root_dir=self.images_directory, split='val',
                                 transform=transforms.Compose([transforms.ToTensor(),
                                                               transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])),
-            shuffle=True, batch_size=self.batch_size
+            shuffle=True, batch_size=self.batch_size, pin_memory=True
         )
 
     def prepare(self):

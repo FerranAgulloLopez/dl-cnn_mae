@@ -34,5 +34,5 @@
 		}
 	},
 	"manual_seed": 0,
-	"device": "cpu"
+	"device": "cuda"
 }
