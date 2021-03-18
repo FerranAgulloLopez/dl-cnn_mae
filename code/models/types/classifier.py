@@ -88,8 +88,6 @@ class ClassifierModel(Model):
         if self.device != 'cpu':
             self.train_loss = self.train_loss.to('cpu')
             self.val_loss = self.val_loss.to('cpu')
-            self.train_acc = self.train_acc.to('cpu')
-            self.val_acc = self.val_acc.to('cpu')
         np.save(self.output_path + '/train_loss', self.train_loss)
         np.save(self.output_path + '/val_loss', self.val_loss)
         with torch.no_grad():
