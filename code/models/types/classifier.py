@@ -195,4 +195,4 @@ class ClassifierModel(Model):
         losses_array[number_epoch][1] = self.compute_accuracy(compressed_output_labels, compressed_true_labels)  # update accuracy array
 
     def compute_accuracy(self, output_labels: torch.Tensor, true_labels: torch.Tensor):
-        return torch.sum(output_labels == true_labels)/len(output_labels)
+        return torch.sum(output_labels == true_labels).item()/len(output_labels)
