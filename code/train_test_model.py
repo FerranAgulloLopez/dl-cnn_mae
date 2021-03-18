@@ -61,7 +61,7 @@ def main(config_file: str, output_path: str, visualize: bool):
     # Load model
     print('\nLoading model')
     sys.stdout.flush()
-    model = ModelFactory.select_model(config['model'], data.get_data_shape(), output_path, config['device'])
+    model = ModelFactory.select_model(config['model'], data.get_data_shape(), data.get_number_samples(), output_path, config['device'])
     model.show_info()
     model.prepare()
     

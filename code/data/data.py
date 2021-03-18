@@ -51,6 +51,10 @@ class Data(metaclass=abc.ABCMeta):
     def get_data_shape(self) -> list:
         raise NotImplementedError('Method not implemented in interface class')
 
+    @abc.abstractmethod
+    def get_number_samples(self) -> list:
+        raise NotImplementedError('Method not implemented in interface class')
+
     def show_info(self):
         logging.info("Train size: " + str(len(self.get_train_loader())) + "\n" +
               "Val size: " + str(len(self.get_val_loader())) + "\n" +

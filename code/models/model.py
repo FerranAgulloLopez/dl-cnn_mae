@@ -27,7 +27,7 @@ class Model(metaclass=abc.ABCMeta):
     # Main methods
 
     @abc.abstractmethod
-    def __init__(self, config, data_shape, output_path, device):
+    def __init__(self, config, data_shape, number_samples, output_path, device):
         pass
 
     @abc.abstractmethod

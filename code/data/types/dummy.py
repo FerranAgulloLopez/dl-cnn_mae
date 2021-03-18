@@ -29,3 +29,6 @@ class DummyData(Data):
 
     def get_data_shape(self):
         return [[3, 256, 256], 20]  # image size, number_labels
+
+    def get_number_samples(self):
+        return [100, 100, 100]  # train, val, test

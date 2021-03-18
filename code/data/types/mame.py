@@ -48,35 +48,38 @@ class MAMe(Data):
                             index_col=0).iterrows())
         }
 
-    def get_train_loader(self) -> DataLoader:
-        return DataLoader(
-            dataset=MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
-                                key=self.label_descriptions, root_dir=self.images_directory, split='train',
-                                transform=transforms.Compose([transforms.ToTensor(),
-                                                              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])),
-            shuffle=True, batch_size=self.batch_size, pin_memory=True
-        )
+        self.train_dataset = MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
+                                    key=self.label_descriptions, root_dir=self.images_directory, split='train',
+                                    transform=transforms.Compose([transforms.ToTensor(),
+                                                                  transforms.Normalize((0.5, 0.5, 0.5),
+                                                                                       (0.5, 0.5, 0.5))]))
 
-    def get_test_loader(self) -> DataLoader:
-        return DataLoader(
-            dataset=MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
-                                key=self.label_descriptions, root_dir=self.images_directory, split='test',
-                                transform=transforms.Compose([transforms.ToTensor(),
-                                                              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])),
-            shuffle=True, batch_size=self.batch_size, pin_memory=True
-        )
+        self.val_dataset = dataset = MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
+                                            key=self.label_descriptions, root_dir=self.images_directory, split='val',
+                                            transform=transforms.Compose([transforms.ToTensor(),
+                                                                          transforms.Normalize((0.5, 0.5, 0.5),
+                                                                                               (0.5, 0.5, 0.5))]))
+
+        self.test_dataset = MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
+                                   key=self.label_descriptions, root_dir=self.images_directory, split='test',
+                                   transform=transforms.Compose([transforms.ToTensor(),
+                                                                 transforms.Normalize((0.5, 0.5, 0.5),
+                                                                                      (0.5, 0.5, 0.5))]))
+
+    def get_train_loader(self) -> DataLoader:
+        return DataLoader(dataset=self.train_dataset, shuffle=True, batch_size=self.batch_size, pin_memory=True)
 
     def get_val_loader(self) -> DataLoader:
-        return DataLoader(
-            dataset=MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
-                                key=self.label_descriptions, root_dir=self.images_directory, split='val',
-                                transform=transforms.Compose([transforms.ToTensor(),
-                                                              transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])),
-            shuffle=True, batch_size=self.batch_size, pin_memory=True
-        )
+        return DataLoader(dataset=self.val_dataset, shuffle=True, batch_size=self.batch_size, pin_memory=True)
+
+    def get_test_loader(self) -> DataLoader:
+        return DataLoader(dataset=self.test_dataset, shuffle=True, batch_size=self.batch_size, pin_memory=True)
 
     def prepare(self):
         pass
 
     def get_data_shape(self):
         return [[3, 256, 256], 29]
+
+    def get_number_samples(self):
+        return [len(self.train_dataset), len(self.val_dataset), len(self.test_dataset)]  # train, val, test
