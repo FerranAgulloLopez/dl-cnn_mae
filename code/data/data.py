@@ -3,8 +3,6 @@ import logging
 
 from torch.utils.data import DataLoader
 
-from auxiliary_files.other_methods.visualize import show_matrix_of_images
-
 
 # Interface for the data storage
 class Data(metaclass=abc.ABCMeta):

@@ -7,6 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
 from data.data import Data
+from auxiliary_files.data_methods.preprocessing import RandomRotation
 
 
 class MAMeDataset(Dataset):
@@ -53,7 +54,7 @@ class MAMe(Data):
             for train_transformation in config['train_transformations']:
                 name = train_transformation['name']
                 if name == 'rotation':
-                    train_transformations.append(transforms.RandomRotation(degrees=train_transformation['degrees']))
+                    train_transformations.append(RandomRotation(degrees=train_transformation['degrees']))
                 elif name == 'horizontal_flip':
                     train_transformations.append(transforms.RandomHorizontalFlip(p=train_transformation['p']))
         train_transformations.append(transforms.ToTensor())

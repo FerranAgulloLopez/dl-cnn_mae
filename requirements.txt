@@ -1,6 +1,7 @@
-numpy
-matplotlib
-pandas
-torch
-scikit-image
-torchvision
+Pillow==5.1.0
+numpy==1.16.0
+matplotlib==3.1.1
+pandas==0.22.0
+torch==1.4.0
+scikit-image==0.14.2
+torchvision==0.5.0
