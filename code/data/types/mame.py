@@ -48,7 +48,7 @@ class MAMe(Data):
                             index_col=0).iterrows())
         }
 
-        train_transformations = [transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5),(0.5, 0.5, 0.5))]
+        train_transformations = []
         if 'train_transformations' in config:
             for train_transformation in config['train_transformations']:
                 name = train_transformation['name']
@@ -56,12 +56,14 @@ class MAMe(Data):
                     train_transformations.append(transforms.RandomRotation(degrees=train_transformation['degrees']))
                 elif name == 'horizontal_flip':
                     train_transformations.append(transforms.RandomHorizontalFlip(p=train_transformation['p']))
+        train_transformations.append(transforms.ToTensor())
+        train_transformations.append(transforms.Normalize((0.5, 0.5, 0.5),(0.5, 0.5, 0.5)))
 
         self.train_dataset = MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
                                     key=self.label_descriptions, root_dir=self.images_directory, split='train',
                                     transform=transforms.Compose(train_transformations))
 
-        self.val_dataset = dataset = MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
+        self.val_dataset = MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
                                             key=self.label_descriptions, root_dir=self.images_directory, split='val',
                                             transform=transforms.Compose([transforms.ToTensor(),
                                                                           transforms.Normalize((0.5, 0.5, 0.5),
