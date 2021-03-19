@@ -60,9 +60,9 @@ class ClassifierModel(Model):
             val_time = time() - t
             if self.scheduler:
                 if self.scheduler_loss == 'train':
-                    self.scheduler.step(self.train_loss[number_epoch].detach())
+                    self.scheduler.step()
                 else:
-                    self.scheduler.step(self.val_loss[number_epoch].detach())
+                    self.scheduler.step()
             print(str('====> Epoch: {} \n' +
                       '                Train set loss: {:.6f}; Train set acc: {:.6f}; time: {} \n' +
                       '                Val set loss: {:.6f}; Val set acc: {:.6f}; time: {} \n')
