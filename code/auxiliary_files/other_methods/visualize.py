@@ -9,7 +9,7 @@ def compare_multiple_lines(visualize, x_array, lines, path, legend=True, ylabel=
         data, label = line
         ax.plot(x_array, data, label=label)
     if legend:
-        ax.legend(loc='upper right', shadow=True)
+        ax.legend(loc='best', shadow=True)
     if title:
         plt.title(title)
     if ylim:
