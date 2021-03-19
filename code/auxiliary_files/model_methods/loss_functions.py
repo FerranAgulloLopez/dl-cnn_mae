@@ -1,4 +1,5 @@
 import sys
+import torch
 import torch.nn as nn
 import numpy as np
 
@@ -35,11 +36,18 @@ class LossFunction:
 class DefaultClassifierLossFunction(LossFunction):
     def __init__(self, config, device):
         super().__init__()
+        self.criterion_name = config['criterion']
         criterion = config['criterion']
         if criterion == 'binary_cross_entropy':
             self.criterion = nn.BCELoss()
+        elif criterion == 'negative_log_likelihood':
+            self.criterion = nn.NLLLoss()
+        elif criterion == 'cross_entropy':
+            self.criterion = nn.CrossEntropyLoss()
         else:
             raise Exception('Loss function criterion not recognized')
         
     def run(self, output_labels, true_labels, number_epoch):
+        if self.criterion_name != 'binary_cross_entropy':
+            true_labels = torch.argmax(true_labels, 1)
         return self.criterion(output_labels, true_labels)

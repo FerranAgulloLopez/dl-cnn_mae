@@ -5,7 +5,8 @@ def select_optimizer(config, model):
     name = config['name']
     learning_rate = config['learning_rate']['value']
     if name == 'Adam':
-        return optim.Adam(model.parameters(), lr=learning_rate, betas=(config['beta_1'], config['beta_2']))
+        amsgrad = False if 'amsgrad' not in config else bool(config['amsgrad'])
+        return optim.Adam(model.parameters(), lr=learning_rate, amsgrad=amsgrad, betas=(config['beta_1'], config['beta_2']))
     elif name == 'AdamW':
         return optim.AdamW(model.parameters(), lr=learning_rate, betas=(config['beta_1'], config['beta_2']))
     elif name == 'SGD':
