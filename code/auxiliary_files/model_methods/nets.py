@@ -681,6 +681,393 @@ class Odin9(nn.Module):
         return self.main_fcc(x)
 
 
+class Odin9Dropout(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Odin9Dropout, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        self.main_cnn = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale) x 128 x 128
+            nn.Conv2d(filter_scale, filter_scale*2, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale*2),
+            # state size (filter_scale*2) x 64 x 64
+            nn.Conv2d(filter_scale*2, filter_scale*4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.Dropout2d(),
+            # state size (filter_scale*4) x 32 x 32
+            nn.Conv2d(filter_scale*4, filter_scale*8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 16 x 16
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.Dropout2d(),
+            # state size (filter_scale*16) x 8 x 8
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*32) x 4 x 4
+            nn.Flatten()
+            # state size filter_scale * 32 * 4 * 4
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 32 * 4 * 4
+            nn.Linear(filter_scale * 32 * 4 * 4, filter_scale * 8 * 2 * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 8 * 2 * 2),
+            # state size filter_scale * 8 * 2 * 2
+            nn.Linear(filter_scale * 8 * 2 * 2, filter_scale * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size filter_scale * 4
+            nn.Linear(filter_scale * 4, output_size),
+            # state size output_size
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x = self.main_cnn(x)
+        return self.main_fcc(x)
+
+
+class Odin9Inception(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Odin9Inception, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        self.inception_a = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(2, 2), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception_b = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(5, 5), stride=(2, 2), padding=(2, 2)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception_c = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(9, 9), stride=(2, 2), padding=(4, 4)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.main_cnn = nn.Sequential(
+            # state size (filter_scale*3) x 64 x 64
+            nn.Conv2d(filter_scale*3, filter_scale*4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*4) x 32 x 32
+            nn.Conv2d(filter_scale*4, filter_scale*8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 16 x 16
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*16) x 8 x 8
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*32) x 4 x 4
+            nn.Flatten()
+            # state size filter_scale * 32 * 4 * 4
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 32 * 4 * 4
+            nn.Linear(filter_scale * 32 * 4 * 4, filter_scale * 8 * 2 * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 8 * 2 * 2),
+            # state size filter_scale * 8 * 2 * 2
+            nn.Linear(filter_scale * 8 * 2 * 2, filter_scale * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size filter_scale * 4
+            nn.Linear(filter_scale * 4, output_size),
+            # state size output_size
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        inception_a = self.inception_a(x)
+        inception_b = self.inception_b(x)
+        inception_c = self.inception_c(x)
+        x = torch.cat((inception_a, inception_b, inception_c), dim=1)
+        x = self.main_cnn(x)
+        return self.main_fcc(x)
+
+
+class Odin9InceptionBaseline(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Odin9InceptionBaseline, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        self.inception_a = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception_b = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception_c = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(9, 9), stride=(1, 1), padding=(4, 4)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.main_cnn = nn.Sequential(
+            # state size (filter_scale*3) x 128 x 128
+            nn.Conv2d(filter_scale*3, filter_scale*4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*4) x 64 x 64
+            nn.Conv2d(filter_scale*4, filter_scale*8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 32 x 32
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*16) x 16 x 16
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 32),
+            # state size (filter_scale*32) x 8 x 8
+            nn.Conv2d(filter_scale * 32, filter_scale * 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*64) x 4 x 4
+            nn.Conv2d(filter_scale * 64, filter_scale * 128, kernel_size=(4, 4), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 128),
+            nn.Flatten()
+            # state size filter_scale * 128
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 128
+            nn.Linear(filter_scale * 128, filter_scale * 64),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 64),
+            # state size filter_scale * 64
+            nn.Linear(filter_scale * 64, filter_scale * 32),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size filter_scale * 32
+            nn.Linear(filter_scale * 32, output_size),
+            # state size output_size
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        inception_a = self.inception_a(x)
+        inception_b = self.inception_b(x)
+        inception_c = self.inception_c(x)
+        x = torch.cat((inception_a, inception_b, inception_c), dim=1)
+        x = self.main_cnn(x)
+        return self.main_fcc(x)
+
+
+class Odin9InceptionBaselineFc(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Odin9InceptionBaselineFc, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        self.inception_a = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception_b = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception_c = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(9, 9), stride=(1, 1), padding=(4, 4)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.main_cnn = nn.Sequential(
+            # state size (filter_scale*3) x 128 x 128
+            nn.Conv2d(filter_scale*3, filter_scale*4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*4) x 64 x 64
+            nn.Conv2d(filter_scale*4, filter_scale*8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 32 x 32
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*16) x 16 x 16
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 32),
+            # state size (filter_scale*32) x 8 x 8
+            nn.Conv2d(filter_scale * 32, filter_scale * 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*64) x 4 x 4
+            nn.Conv2d(filter_scale * 64, filter_scale * 128, kernel_size=(4, 4), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 128),
+            nn.Flatten()
+            # state size filter_scale * 128
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 128
+            nn.Linear(filter_scale * 128, filter_scale * 32),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 32),
+            # state size filter_scale * 32
+            nn.Linear(filter_scale * 32, output_size),
+            # state size output_size
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        inception_a = self.inception_a(x)
+        inception_b = self.inception_b(x)
+        inception_c = self.inception_c(x)
+        x = torch.cat((inception_a, inception_b, inception_c), dim=1)
+        x = self.main_cnn(x)
+        return self.main_fcc(x)
+
+
+class Odin9InceptionBaselinePlus(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Odin9InceptionBaselinePlus, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        self.inception_first_a = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception_first_b = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception_first_c = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(9, 9), stride=(1, 1), padding=(4, 4)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.first_cnn = nn.Sequential(
+            # state size (filter_scale*3) x 128 x 128
+            nn.Conv2d(filter_scale*3, filter_scale*4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 4),
+            # state size (filter_scale*4) x 64 x 64
+            nn.Conv2d(filter_scale * 4, filter_scale * 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception_second_a = nn.Sequential(
+            # state size (filter_scale*8) x 32 x 32
+            nn.Conv2d(filter_scale*8, filter_scale*16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception_second_b = nn.Sequential(
+            # state size (filter_scale*8) x 32 x 32
+            nn.Conv2d(filter_scale*8, filter_scale*16, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception_second_c = nn.Sequential(
+            # state size (filter_scale*8) x 32 x 32
+            nn.Conv2d(filter_scale*8, filter_scale*16, kernel_size=(9, 9), stride=(1, 1), padding=(4, 4)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.second_cnn = nn.Sequential(
+            # state size (filter_scale*48) x 16 x 16
+            nn.Conv2d(filter_scale * 48, filter_scale * 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 64),
+            # state size (filter_scale*64) x 8 x 8
+            nn.Conv2d(filter_scale * 64, filter_scale * 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*64) x 4 x 4
+            nn.Conv2d(filter_scale * 128, filter_scale * 256, kernel_size=(4, 4), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.Flatten(),
+            nn.BatchNorm1d(filter_scale * 256)
+            # state size filter_scale * 256
+        )
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 256
+            nn.Linear(filter_scale * 256, filter_scale * 128),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 128),
+            # state size filter_scale * 128
+            nn.Linear(filter_scale * 128, filter_scale * 64),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size filter_scale * 64
+            nn.Linear(filter_scale * 64, filter_scale * 32),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 32),
+            # state size filter_scale * 32
+            nn.Linear(filter_scale * 32, output_size),
+            # state size output_size
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        inception_a = self.inception_first_a(x)
+        inception_b = self.inception_first_b(x)
+        inception_c = self.inception_first_c(x)
+        x = torch.cat((inception_a, inception_b, inception_c), dim=1)
+        x = self.first_cnn(x)
+        inception_a = self.inception_second_a(x)
+        inception_b = self.inception_second_b(x)
+        inception_c = self.inception_second_c(x)
+        x = torch.cat((inception_a, inception_b, inception_c), dim=1)
+        x = self.second_cnn(x)
+        return self.main_fcc(x)
+
+
 class OdinK9(nn.Module):
     def __init__(self, config, data_shape):
         super(OdinK9, self).__init__()
