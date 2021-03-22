@@ -1326,7 +1326,7 @@ class OdInception9(nn.Module):
             # state size filter_scale * 32
             nn.Linear(filter_scale * 32, output_size),
             # state size output_size
-            nn.Sigmoid()
+            nn.Softmax()
         )
 
     def forward(self, x):
