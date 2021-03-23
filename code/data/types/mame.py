@@ -7,7 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
 from data.data import Data
-from auxiliary_files.data_methods.preprocessing import RandomRotation
+from auxiliary_files.data_methods.preprocessing import RandomRotation, GaussianBlur
 
 
 class MAMeDataset(Dataset):
@@ -57,8 +57,19 @@ class MAMe(Data):
                     train_transformations.append(RandomRotation(degrees=train_transformation['degrees']))
                 elif name == 'horizontal_flip':
                     train_transformations.append(transforms.RandomHorizontalFlip(p=train_transformation['p']))
+                elif name == 'crop':
+                    train_transformations.append(transforms.CenterCrop(size=train_transformation['size']))
+                    train_transformations.append(transforms.Resize(size=256))
+                elif name == 'blur':
+                    train_transformations.append(GaussianBlur(kernel_size=train_transformation['kernel_size'], sigma=(train_transformation['sigma'][0], train_transformation['sigma'][1])))
         train_transformations.append(transforms.ToTensor())
         train_transformations.append(transforms.Normalize((0.5, 0.5, 0.5),(0.5, 0.5, 0.5)))
+        if 'train_transformations' in config:
+            for train_transformation in config['train_transformations']:
+                name = train_transformation['name']
+                if name == 'erasing':
+                    train_transformations.append(transforms.RandomErasing(p=train_transformation['p']))
+
 
         self.train_dataset = MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
                                     key=self.label_descriptions, root_dir=self.images_directory, split='train',
