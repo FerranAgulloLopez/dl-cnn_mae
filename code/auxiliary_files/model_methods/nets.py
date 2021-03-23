@@ -1300,3 +1300,101 @@ class Odin11(nn.Module):
     def forward(self, x):
         x = self.main_cnn(x)
         return self.main_fcc(x)
+
+
+class OdInception9(nn.Module):
+    def __init__(self, config, data_shape):
+        super(OdInception9, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        self.inception1a = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception1b = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception1c = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(9, 9), stride=(1, 1), padding=(4, 4)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.main_cnn = nn.Sequential(
+            # state size (filter_scale*3) x 128 x 128
+            nn.Conv2d(filter_scale*3, filter_scale*4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*4) x 64 x 64
+            nn.Conv2d(filter_scale*4, filter_scale*8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 32 x 32
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*16) x 16 x 16
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 32)
+        )
+        # state size (filter_scale*32) x 8 x 8
+        self.inception2a = nn.Sequential(
+            # input is (filter_scale*32) x 8 x 8
+            nn.Conv2d(filter_scale * 32, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception2b = nn.Sequential(
+            # input is (filter_scale*32) x 8 x 8
+            nn.Conv2d(filter_scale * 32, filter_scale * 8, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.inception2c = nn.Sequential(
+            # input is (filter_scale*32) x 8 x 8
+            nn.Conv2d(filter_scale * 32, filter_scale * 8, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2))
+        )
+        self.cnn_2 = nn.Sequential(
+            # input is (filter_scale*32) x 4 x 4
+            nn.BatchNorm2d(filter_scale * 32),
+            nn.Flatten()
+            # state size filter_scale * 32 * 4 * 4
+
+        )
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 32
+            nn.Linear(filter_scale * 32 * 4 * 4, filter_scale * 64),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 64),
+            # state size filter_scale * 64
+            nn.Linear(filter_scale * 64, filter_scale * 32),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size filter_scale * 32
+            nn.Linear(filter_scale * 32, output_size),
+            # state size output_size
+            nn.Softmax()
+        )
+
+    def forward(self, x):
+        inception1a = self.inception1a(x)
+        inception1b = self.inception1b(x)
+        inception1c = self.inception1c(x)
+        x = torch.cat((inception1a, inception1b, inception1c), dim=1)
+        x = self.main_cnn(x)
+        inception2a = self.inception2a(x)
+        inception2b = self.inception2b(x)
+        inception2c = self.inception2c(x)
+        x = torch.cat((inception2a, inception2b, inception2c), dim=1)
+        x = self.cnn_2(x)
+        return self.main_fcc(x)
