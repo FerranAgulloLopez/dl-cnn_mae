@@ -1465,7 +1465,7 @@ class OdinP9(nn.Module):
             # state size filter_scale * 4
             nn.Linear(filter_scale * 4, output_size),
             # state size output_size
-            nn.Sigmoid()
+            nn.Softmax()
         )
         print(self)
 
