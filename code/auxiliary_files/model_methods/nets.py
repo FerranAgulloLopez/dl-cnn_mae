@@ -1,7 +1,8 @@
 import sys
 import torch
 import torch.nn as nn
-from torchvision.transforms import Resize
+from torchvision.transforms import Resize, ToPILImage, ToTensor
+from torch.nn.functional import interpolate
 
 
 def select_net(config, data_shape):
@@ -1471,7 +1472,7 @@ class OdinP9(nn.Module):
 
     def forward(self, x):
         x_main = self.main_cnn(x)
-        resized_x = Resize((32, 32))(x)
+        resized_x = interpolate(x, size=(32, 32))
         x_small = self.small_cnn(resized_x)
 
         final_x = torch.cat((x_main, x_small), dim=1)
