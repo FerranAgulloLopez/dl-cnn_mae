@@ -1466,7 +1466,7 @@ class OdinP9(nn.Module):
             # state size filter_scale * 4
             nn.Linear(filter_scale * 4, output_size),
             # state size output_size
-            nn.Softmax()
+            nn.Softmax(dim=1)
         )
         print(self)
 
@@ -1478,3 +1478,679 @@ class OdinP9(nn.Module):
         final_x = torch.cat((x_main, x_small), dim=1)
         return self.main_fcc(final_x)
 
+
+class Lassie9(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Lassie9, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        softmax = config['softmax']
+        self.main_cnn = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale) x 128 x 128
+            nn.Conv2d(filter_scale, filter_scale*2, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale*2),
+            # state size (filter_scale*2) x 64 x 64
+            nn.Conv2d(filter_scale*2, filter_scale*4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*4) x 32 x 32
+            nn.Conv2d(filter_scale*4, filter_scale*8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 16 x 16
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*16) x 8 x 8
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*32) x 4 x 4
+            nn.Flatten()
+            # state size filter_scale * 32 * 4 * 4
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 32 * 4 * 4
+            nn.Linear(filter_scale * 32 * 4 * 4, filter_scale * 16 * 4 * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 16 * 4 * 4),
+            # state size filter_scale * 16 * 4 * 4
+            nn.Linear(filter_scale * 16 * 4 * 4, filter_scale * 16 * 2 * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size filter_scale * 16 * 2 * 2
+            nn.Linear(filter_scale * 16 * 2 * 2, output_size),
+            # state size output_size
+            nn.Softmax(dim=1) if softmax else nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x = self.main_cnn(x)
+        return self.main_fcc(x)
+
+
+class Lassie9B(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Lassie9B, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        softmax = config['softmax']
+        self.main_cnn = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale) x 128 x 128
+            nn.Conv2d(filter_scale, filter_scale*2, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale*2),
+            # state size (filter_scale*2) x 64 x 64
+            nn.Conv2d(filter_scale*2, filter_scale*4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*4) x 32 x 32
+            nn.Conv2d(filter_scale*4, filter_scale*8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 16 x 16
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*16) x 8 x 8
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*32) x 4 x 4
+            nn.Flatten()
+            # state size filter_scale * 32 * 4 * 4
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 32 * 4 * 4
+            nn.Linear(filter_scale * 32 * 4 * 4, filter_scale * 16 * 4 * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 16 * 4 * 4),
+            # state size filter_scale * 16 * 4 * 4
+            nn.Linear(filter_scale * 16 * 4 * 4, filter_scale * 16 * 2 * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 16 * 2 * 2),
+            # state size filter_scale * 16 * 2 * 2
+            nn.Linear(filter_scale * 16 * 2 * 2, output_size),
+            # state size output_size
+            nn.Softmax(dim=1) if softmax else nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x = self.main_cnn(x)
+        return self.main_fcc(x)
+
+
+class Lassie9D(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Lassie9D, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        softmax = config['softmax']
+        self.main_cnn = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale) x 128 x 128
+            nn.Conv2d(filter_scale, filter_scale*2, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale*2),
+            # state size (filter_scale*2) x 64 x 64
+            nn.Conv2d(filter_scale*2, filter_scale*4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*4) x 32 x 32
+            nn.Conv2d(filter_scale*4, filter_scale*8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 16 x 16
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*16) x 8 x 8
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*32) x 4 x 4
+            nn.Flatten()
+            # state size filter_scale * 32 * 4 * 4
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 32 * 4 * 4
+            nn.Linear(filter_scale * 32 * 4 * 4, filter_scale * 16 * 4 * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout(p=0.2),
+            # state size filter_scale * 16 * 4 * 4
+            nn.Linear(filter_scale * 16 * 4 * 4, filter_scale * 16 * 2 * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 16 * 2 * 2),
+            # state size filter_scale * 16 * 2 * 2
+            nn.Linear(filter_scale * 16 * 2 * 2, output_size),
+            # state size output_size
+            nn.Softmax(dim=1) if softmax else nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x = self.main_cnn(x)
+        return self.main_fcc(x)
+
+
+class Lassie9Residual(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Lassie9Residual, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        softmax = config['softmax']
+
+        self.first_cnn = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale) x 128 x 128
+            nn.Conv2d(filter_scale, filter_scale*2, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale*2),
+            # state size (filter_scale*2) x 64 x 64
+        )
+
+        self.down_sample_1 = nn.Sequential(
+            nn.Conv2d(number_bands, filter_scale * 2, kernel_size=5, stride=4, padding=2, bias=False),
+            nn.BatchNorm2d(filter_scale * 2)
+        )
+
+        self.second_cnn = nn.Sequential(
+            # state size (filter_scale*2) x 64 x 64
+            nn.Conv2d(filter_scale * 2, filter_scale * 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*4) x 32 x 32
+            nn.Conv2d(filter_scale * 4, filter_scale * 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 16 x 16
+        )
+
+        self.down_sample_2 = nn.Sequential(
+            nn.Conv2d(filter_scale * 2, filter_scale * 8, kernel_size=5, stride=4, padding=2, bias=False),
+            nn.BatchNorm2d(filter_scale * 8)
+        )
+
+        self.third_cnn = nn.Sequential(
+            # state size (filter_scale*8) x 16 x 16
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*16) x 8 x 8
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*32) x 4 x 4
+            nn.Flatten()
+            # state size filter_scale * 32 * 4 * 4
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 32 * 4 * 4
+            nn.Linear(filter_scale * 32 * 4 * 4, filter_scale * 16 * 4 * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 16 * 4 * 4),
+            # state size filter_scale * 16 * 4 * 4
+            nn.Linear(filter_scale * 16 * 4 * 4, filter_scale * 16 * 2 * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size filter_scale * 16 * 2 * 2
+            nn.Linear(filter_scale * 16 * 2 * 2, output_size),
+            # state size output_size
+            nn.Softmax(dim=1) if softmax else nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        out = self.first_cnn(x)
+        out += self.down_sample_1(x)
+        out2 = self.second_cnn(out)
+        out2 += self.down_sample_2(out)
+        out3 = self.third_cnn(out2)
+        return self.main_fcc(out3)
+
+
+class Lassie9ResidualO(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Lassie9ResidualO, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        softmax = config['softmax']
+
+        self.first_cnn = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale) x 128 x 128
+            nn.Conv2d(filter_scale, filter_scale*2, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale*2),
+            # state size (filter_scale*2) x 64 x 64
+        )
+
+        self.down_sample_1 = nn.Sequential(
+            nn.Conv2d(number_bands, filter_scale * 2, kernel_size=5, stride=4, padding=2, bias=False),
+            nn.BatchNorm2d(filter_scale * 2)
+        )
+
+        self.second_cnn = nn.Sequential(
+            # state size (filter_scale*2) x 64 x 64
+            nn.Conv2d(filter_scale * 2, filter_scale * 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*4) x 32 x 32
+            nn.Conv2d(filter_scale * 4, filter_scale * 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 16 x 16
+        )
+
+        self.down_sample_2 = nn.Sequential(
+            nn.Conv2d(filter_scale * 2, filter_scale * 8, kernel_size=5, stride=4, padding=2, bias=False),
+            nn.BatchNorm2d(filter_scale * 8)
+        )
+
+        self.third_cnn = nn.Sequential(
+            # state size (filter_scale*8) x 16 x 16
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*16) x 8 x 8
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*32) x 4 x 4
+            nn.Flatten()
+            # state size filter_scale * 32 * 4 * 4
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 32 * 4 * 4
+            nn.Linear(filter_scale * 32 * 4 * 4, filter_scale * 8 * 2 * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 8 * 2 * 2),
+            # state size filter_scale * 8 * 2 * 2
+            nn.Linear(filter_scale * 8 * 2 * 2, filter_scale * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            # state size filter_scale * 4
+            nn.Linear(filter_scale * 4, output_size),
+            # state size output_size
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        out = self.first_cnn(x)
+        out += self.down_sample_1(x)
+        out2 = self.second_cnn(out)
+        out2 += self.down_sample_2(out)
+        out3 = self.third_cnn(out2)
+        return self.main_fcc(out3)
+
+
+class Lassie9ResidualB(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Lassie9ResidualB, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        softmax = config['softmax']
+
+        self.first_cnn = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale) x 128 x 128
+            nn.Conv2d(filter_scale, filter_scale*2, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale*2),
+            # state size (filter_scale*2) x 64 x 64
+        )
+
+        self.down_sample_1 = nn.Sequential(
+            nn.Conv2d(number_bands, filter_scale * 2, kernel_size=5, stride=4, padding=2, bias=False),
+            nn.BatchNorm2d(filter_scale * 2)
+        )
+
+        self.second_cnn = nn.Sequential(
+            # state size (filter_scale*2) x 64 x 64
+            nn.Conv2d(filter_scale * 2, filter_scale * 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*4) x 32 x 32
+            nn.Conv2d(filter_scale * 4, filter_scale * 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 16 x 16
+        )
+
+        self.down_sample_2 = nn.Sequential(
+            nn.Conv2d(filter_scale * 2, filter_scale * 8, kernel_size=5, stride=4, padding=2, bias=False),
+            nn.BatchNorm2d(filter_scale * 8)
+        )
+
+        self.third_cnn = nn.Sequential(
+            # state size (filter_scale*8) x 16 x 16
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*16) x 8 x 8
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*32) x 4 x 4
+            nn.Flatten()
+            # state size filter_scale * 32 * 4 * 4
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 32 * 4 * 4
+            nn.Linear(filter_scale * 32 * 4 * 4, filter_scale * 16 * 4 * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 16 * 4 * 4),
+            # state size filter_scale * 16 * 4 * 4
+            nn.Linear(filter_scale * 16 * 4 * 4, filter_scale * 16 * 2 * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 16 * 2 * 2),
+            # state size filter_scale * 16 * 2 * 2
+            nn.Linear(filter_scale * 16 * 2 * 2, output_size),
+            # state size output_size
+            nn.Softmax(dim=1) if softmax else nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        out = self.first_cnn(x)
+        out += self.down_sample_1(x)
+        out2 = self.second_cnn(out)
+        out2 += self.down_sample_2(out)
+        out3 = self.third_cnn(out2)
+        return self.main_fcc(out3)
+
+
+class Lassie9ResidualA(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Lassie9ResidualA, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        softmax = config['softmax']
+
+        self.first_cnn = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale) x 128 x 128
+            nn.Conv2d(filter_scale, filter_scale*2, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale*2),
+            # state size (filter_scale*2) x 64 x 64
+        )
+
+        self.down_sample_1 = nn.Sequential(
+            nn.Conv2d(number_bands, filter_scale * 2, kernel_size=5, stride=4, padding=2, bias=False),
+            nn.BatchNorm2d(filter_scale * 2)
+        )
+
+        self.second_cnn = nn.Sequential(
+            # state size (filter_scale*2) x 64 x 64
+            nn.Conv2d(filter_scale * 2, filter_scale * 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*4) x 32 x 32
+            nn.Conv2d(filter_scale * 4, filter_scale * 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 16 x 16
+        )
+
+        self.down_sample_2 = nn.Sequential(
+            nn.Conv2d(filter_scale * 2, filter_scale * 8, kernel_size=5, stride=4, padding=2, bias=False),
+            nn.BatchNorm2d(filter_scale * 8)
+        )
+
+        self.third_cnn = nn.Sequential(
+            # state size (filter_scale*8) x 16 x 16
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*16) x 8 x 8
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*32) x 4 x 4
+            nn.AdaptiveAvgPool2d((1, 1)),
+            # state size (filter_scale*32) x 1 x 1
+            nn.Flatten()
+            # state size filter_scale * 32
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 32
+            nn.Linear(filter_scale * 32, filter_scale * 16),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 16),
+            # state size filter_scale * 16
+            nn.Linear(filter_scale * 16, filter_scale * 8),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 8),
+            # state size filter_scale * 8
+            nn.Linear(filter_scale * 8, output_size),
+            # state size output_size
+            nn.Softmax(dim=1) if softmax else nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        out = self.first_cnn(x)
+        out += self.down_sample_1(x)
+        out2 = self.second_cnn(out)
+        out2 += self.down_sample_2(out)
+        out3 = self.third_cnn(out2)
+        return self.main_fcc(out3)
+
+
+class Lassie9ResidualBB(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Lassie9ResidualBB, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        softmax = config['softmax']
+
+        self.first_cnn = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale) x 128 x 128
+            nn.Conv2d(filter_scale, filter_scale*2, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale*2),
+            # state size (filter_scale*2) x 64 x 64
+        )
+
+        self.down_sample_1 = nn.Sequential(
+            nn.Conv2d(number_bands, filter_scale * 2, kernel_size=5, stride=4, padding=2, bias=False),
+            nn.BatchNorm2d(filter_scale * 2)
+        )
+
+        self.second_cnn = nn.Sequential(
+            # state size (filter_scale*2) x 64 x 64
+            nn.Conv2d(filter_scale * 2, filter_scale * 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 4),
+            # state size (filter_scale*4) x 32 x 32
+            nn.Conv2d(filter_scale * 4, filter_scale * 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 16 x 16
+        )
+
+        self.down_sample_2 = nn.Sequential(
+            nn.Conv2d(filter_scale * 2, filter_scale * 8, kernel_size=5, stride=4, padding=2, bias=False),
+            nn.BatchNorm2d(filter_scale * 8)
+        )
+
+        self.third_cnn = nn.Sequential(
+            # state size (filter_scale*8) x 16 x 16
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 16),
+            # state size (filter_scale*16) x 8 x 8
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 32),
+            # state size (filter_scale*32) x 4 x 4
+            nn.Flatten()
+            # state size filter_scale * 32 * 4 * 4
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 32 * 4 * 4
+            nn.Linear(filter_scale * 32 * 4 * 4, filter_scale * 16 * 4 * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 16 * 4 * 4),
+            # state size filter_scale * 16 * 4 * 4
+            nn.Linear(filter_scale * 16 * 4 * 4, filter_scale * 16 * 2 * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 16 * 2 * 2),
+            # state size filter_scale * 16 * 2 * 2
+            nn.Linear(filter_scale * 16 * 2 * 2, output_size),
+            # state size output_size
+            nn.Softmax(dim=1) if softmax else nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        out = self.first_cnn(x)
+        out += self.down_sample_1(x)
+        out2 = self.second_cnn(out)
+        out2 += self.down_sample_2(out)
+        out3 = self.third_cnn(out2)
+        return self.main_fcc(out3)
+
+
+class Lassie9ResidualBBD(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Lassie9ResidualBBD, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        softmax = config['softmax']
+
+        self.first_cnn = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale) x 128 x 128
+            nn.Conv2d(filter_scale, filter_scale*2, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout2d(p=0.2),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale*2),
+            # state size (filter_scale*2) x 64 x 64
+        )
+
+        self.down_sample_1 = nn.Sequential(
+            nn.Conv2d(number_bands, filter_scale * 2, kernel_size=5, stride=4, padding=2, bias=False),
+            nn.BatchNorm2d(filter_scale * 2)
+        )
+
+        self.second_cnn = nn.Sequential(
+            # state size (filter_scale*2) x 64 x 64
+            nn.Conv2d(filter_scale * 2, filter_scale * 4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Dropout2d(p=0.2),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 4),
+            # state size (filter_scale*4) x 32 x 32
+            nn.Conv2d(filter_scale * 4, filter_scale * 8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 16 x 16
+        )
+
+        self.down_sample_2 = nn.Sequential(
+            nn.Conv2d(filter_scale * 2, filter_scale * 8, kernel_size=5, stride=4, padding=2, bias=False),
+            nn.BatchNorm2d(filter_scale * 8)
+        )
+
+        self.third_cnn = nn.Sequential(
+            # state size (filter_scale*8) x 16 x 16
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.Dropout2d(p=0.2),
+            nn.BatchNorm2d(filter_scale * 16),
+            # state size (filter_scale*16) x 8 x 8
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 32),
+            # state size (filter_scale*32) x 4 x 4
+            nn.Flatten()
+            # state size filter_scale * 32 * 4 * 4
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 32 * 4 * 4
+            nn.Linear(filter_scale * 32 * 4 * 4, filter_scale * 16 * 4 * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 16 * 4 * 4),
+            # state size filter_scale * 16 * 4 * 4
+            nn.Linear(filter_scale * 16 * 4 * 4, filter_scale * 16 * 2 * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.BatchNorm1d(filter_scale * 16 * 2 * 2),
+            # state size filter_scale * 16 * 2 * 2
+            nn.Linear(filter_scale * 16 * 2 * 2, output_size),
+            # state size output_size
+            nn.Softmax(dim=1) if softmax else nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        out = self.first_cnn(x)
+        out += self.down_sample_1(x)
+        out2 = self.second_cnn(out)
+        out2 += self.down_sample_2(out)
+        out3 = self.third_cnn(out2)
+        return self.main_fcc(out3)
