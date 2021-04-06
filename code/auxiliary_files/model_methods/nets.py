@@ -1485,6 +1485,7 @@ class Odin9ReLU(nn.Module):
         number_bands = data_shape[0]
         filter_scale = config['filter_scale']
         output_size = config['output_size']
+        softmax = config['softmax']
         self.main_cnn = nn.Sequential(
             # input is (number_bands) x 256 x 256
             nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
@@ -1528,7 +1529,7 @@ class Odin9ReLU(nn.Module):
             # state size filter_scale * 4
             nn.Linear(filter_scale * 4, output_size),
             # state size output_size
-            nn.Sigmoid()
+            nn.Softmax(dim=1) if softmax else nn.Sigmoid()
         )
 
     def forward(self, x):
