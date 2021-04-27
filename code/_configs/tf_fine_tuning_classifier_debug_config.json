@@ -1,0 +1,37 @@
+{
+	"data": {
+		"name": "dummy"
+	},
+	"model": {
+		"name": "tf_fine_tuning",
+		"transforms": {
+			"preprocess": [{"name": "WI", "type": "normal", "mean": 0, "std": 0.02}]
+		},
+		"network": {
+            "name": "alexnet",
+			"weights_path": "../input/models_weights/alexnet-owt-7be5be79.pth",
+			"frozen_layers": 20,
+			"reinitialized_layers": 4,
+			"softmax": 1
+		},
+		"train_info": {
+			"number_epochs": 2,
+			"loss_function": {
+				"name": "DefaultClassifier",
+				"criterion": "binary_cross_entropy"
+			},
+			"optimizer": {
+				"name": "AdamW",
+				"beta_1": 0.5,
+				"beta_2": 0.999,
+				"amsgrad": 0,
+				"learning_rate": {
+					"value": 0.0001,
+					"dynamic": [0]
+				}
+			}
+		}
+	},
+	"manual_seed": 0,
+	"device": "cpu"
+}

@@ -1,5 +1,6 @@
-from models.types.classifier import ClassifierModel
 from models.model import Model
+from models.types.classifier import ClassifierModel
+from models.types.tf_fine_tuning import TransferLearningFineTuning
 
 
 class ModelFactory:
@@ -12,6 +13,8 @@ class ModelFactory:
         name = config['name']
         if name == 'default_classifier':
             model = ClassifierModel(config, *args)
+        elif name == 'tf_fine_tuning':
+            model = TransferLearningFineTuning(config, *args)
         else:
             raise Exception('The model with name ' + name + ' does not exist')
         if issubclass(type(model), Model):

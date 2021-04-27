@@ -1,0 +1,46 @@
+{
+	"data": {
+		"name": "MAMe",
+		"version": "full",
+		"metadata_directory": "../input/MAMe/",
+		"images_directory": "../input/MAMe/MAMe_data_256/data_256/",
+		"train_transformations": [
+			{"name":  "rotation", "degrees":  30},
+			{"name":  "horizontal_flip", "p":  0.5},
+			{"name":  "erasing", "p":  0.5},
+			{"name":  "crop", "size":  200}
+		],
+		"batch_size": 64
+	},
+	"model": {
+		"name": "tf_fine_tuning",
+		"transforms": {
+			"preprocess": [{"name": "WI", "type": "normal", "mean": 0, "std": 0.02}]
+		},
+		"network": {
+            "name": "alexnet",
+			"weights_path": "../input/models_weights/alexnet-owt-7be5be79.pth",
+			"frozen_layers": 2,
+			"reinitialized_layers": 4,
+			"softmax": 1
+		},
+		"train_info": {
+			"number_epochs": 1,
+			"loss_function": {
+				"name": "DefaultClassifier",
+				"criterion": "binary_cross_entropy"
+			},
+			"optimizer": {
+				"name": "Adam",
+				"beta_1": 0.5,
+				"beta_2": 0.999,
+				"learning_rate": {
+					"value": 0.0001,
+					"dynamic": [0]
+				}
+			}
+		}
+	},
+	"manual_seed": 0,
+	"device": "cpu"
+}

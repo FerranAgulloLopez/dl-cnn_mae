@@ -4,24 +4,25 @@
 	},
 	"model": {
 		"name": "default_classifier",
-		"pre": [0],
 		"transforms": {
-			"preprocess": ["WI"]
+			"preprocess": [{"name": "WI", "type": "normal", "mean": 0, "std": 0.02}]
 		},
 		"network": {
-            "name": "baseline_256x256",
-            "filter_scale": 16
+            "name": "Lassie9ResidualBBD",
+            "filter_scale": 32,
+			"softmax": 0
 		},
 		"train_info": {
-			"number_epochs": 1,
+			"number_epochs": 2,
 			"loss_function": {
 				"name": "DefaultClassifier",
 				"criterion": "binary_cross_entropy"
 			},
 			"optimizer": {
-				"name": "Adam",
+				"name": "AdamW",
 				"beta_1": 0.5,
 				"beta_2": 0.999,
+				"amsgrad": 0,
 				"learning_rate": {
 					"value": 0.0001,
 					"dynamic": [0]

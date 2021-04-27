@@ -4,20 +4,26 @@
 		"version": "full",
 		"metadata_directory": "../input/MAMe/",
 		"images_directory": "../input/MAMe/MAMe_data_256/data_256/",
+		"train_transformations": [
+			{"name":  "rotation", "degrees":  30},
+			{"name":  "horizontal_flip", "p":  0.5},
+			{"name":  "erasing", "p":  0.5},
+			{"name":  "crop", "size":  200}
+		],
 		"batch_size": 64
 	},
 	"model": {
 		"name": "default_classifier",
-		"pre": [0],
 		"transforms": {
-			"preprocess": ["WI"]
+			"preprocess": [{"name": "WI", "type": "normal", "mean": 0, "std": 0.02}]
 		},
 		"network": {
-            "name": "baseline_256x256",
-            "filter_scale": 16
+            "name": "Lassie9D",
+            "filter_scale": 32,
+			"softmax": 1
 		},
 		"train_info": {
-			"number_epochs": 15,
+			"number_epochs": 1,
 			"loss_function": {
 				"name": "DefaultClassifier",
 				"criterion": "binary_cross_entropy"
@@ -34,5 +40,5 @@
 		}
 	},
 	"manual_seed": 0,
-	"device": "cuda"
+	"device": "cpu"
 }

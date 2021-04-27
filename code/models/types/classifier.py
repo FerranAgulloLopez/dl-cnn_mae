@@ -1,8 +1,7 @@
-from time import time
 import sys
-
-import numpy as np
 import torch
+from time import time
+import numpy as np
 
 from auxiliary_files.model_methods.loss_functions import select_loss_function
 from auxiliary_files.model_methods.model_operations import model_arq_to_json
@@ -26,15 +25,8 @@ class ClassifierModel(Model):
         self.data_shape = data_shape[0]
         self.output_path = output_path
         self.device = device
-
-        if config['pre'][0] == 0:
-            # do not use a pretrained model
-            self.config['network']['output_size'] = self.number_labels
-            self.network = select_net(self.config['network'], self.data_shape)
-        else:
-            # use a pretrained model
-            raise Exception('Not implemented')
-
+        self.config['network']['output_size'] = self.number_labels
+        self.network = select_net(self.config['network'], self.data_shape)
         self.config['network']['layers'] = model_arq_to_json(self.network)
 
     # preprocess model
