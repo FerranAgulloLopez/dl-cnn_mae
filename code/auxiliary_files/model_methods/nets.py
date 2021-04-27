@@ -1479,6 +1479,64 @@ class OdinP9(nn.Module):
         return self.main_fcc(final_x)
 
 
+class Odin9ReLU(nn.Module):
+    def __init__(self, config, data_shape):
+        super(Odin9ReLU, self).__init__()
+        number_bands = data_shape[0]
+        filter_scale = config['filter_scale']
+        output_size = config['output_size']
+        softmax = config['softmax']
+        self.main_cnn = nn.Sequential(
+            # input is (number_bands) x 256 x 256
+            nn.Conv2d(number_bands, filter_scale, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale) x 128 x 128
+            nn.Conv2d(filter_scale, filter_scale*2, kernel_size=(3, 3), stride=(1, 1), padding=(1,1)),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale*2),
+            # state size (filter_scale*2) x 64 x 64
+            nn.Conv2d(filter_scale*2, filter_scale*4, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*4) x 32 x 32
+            nn.Conv2d(filter_scale*4, filter_scale*8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d((2, 2)),
+            nn.BatchNorm2d(filter_scale * 8),
+            # state size (filter_scale*8) x 16 x 16
+            nn.Conv2d(filter_scale * 8, filter_scale * 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*16) x 8 x 8
+            nn.Conv2d(filter_scale * 16, filter_scale * 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1)),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d((2, 2)),
+            # state size (filter_scale*32) x 4 x 4
+            nn.Flatten()
+            # state size filter_scale * 32 * 4 * 4
+        )
+
+        self.main_fcc = nn.Sequential(
+            # input is filter_scale * 32 * 4 * 4
+            nn.Linear(filter_scale * 32 * 4 * 4, filter_scale * 8 * 2 * 2),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm1d(filter_scale * 8 * 2 * 2),
+            # state size filter_scale * 8 * 2 * 2
+            nn.Linear(filter_scale * 8 * 2 * 2, filter_scale * 4),
+            nn.ReLU(inplace=True),
+            # state size filter_scale * 4
+            nn.Linear(filter_scale * 4, output_size),
+            # state size output_size
+            nn.Softmax(dim=1) if softmax else nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x = self.main_cnn(x)
+        return self.main_fcc(x)
+
+
 class Lassie9(nn.Module):
     def __init__(self, config, data_shape):
         super(Lassie9, self).__init__()

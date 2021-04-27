@@ -4,13 +4,11 @@
 		"version": "full",
 		"metadata_directory": "../input/MAMe/",
 		"images_directory": "../input/MAMe/MAMe_data_256/data_256/",
+		"batch_size": 64,
 		"train_transformations": [
-			{"name":  "rotation", "degrees":  30},
-			{"name":  "horizontal_flip", "p":  0.5},
-			{"name":  "erasing", "p":  0.5},
-			{"name":  "crop", "size":  200}
-		],
-		"batch_size": 64
+			{"name":  "rotation", "degrees": 30},
+			{"name": "horizontal_flip", "p": 0.5}
+		]
 	},
 	"model": {
 		"name": "default_classifier",
@@ -18,22 +16,22 @@
 			"preprocess": [{"name": "WI", "type": "normal", "mean": 0, "std": 0.02}]
 		},
 		"network": {
-            "name": "Lassie9D",
-            "filter_scale": 32,
-			"softmax": 1
+            "name": "OdinP9",
+            "filter_scale": 16
 		},
 		"train_info": {
-			"number_epochs": 1,
+			"number_epochs": 50,
 			"loss_function": {
 				"name": "DefaultClassifier",
 				"criterion": "binary_cross_entropy"
 			},
 			"optimizer": {
-				"name": "Adam",
+				"name": "SGD",
+				"momentum": 0.9,
 				"beta_1": 0.5,
 				"beta_2": 0.999,
 				"learning_rate": {
-					"value": 0.0001,
+					"value": 0.01,
 					"dynamic": [0]
 				}
 			}
