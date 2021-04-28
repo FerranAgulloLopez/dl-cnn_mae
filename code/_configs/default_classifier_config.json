@@ -5,9 +5,17 @@
 		"metadata_directory": "../input/MAMe/",
 		"images_directory": "../input/MAMe/MAMe_data_256/data_256/",
 		"batch_size": 64,
-		"train_transformations": [
-			{"name":  "rotation", "degrees": 30},
-			{"name": "horizontal_flip", "p": 0.5}
+		"train_transforms": [
+			{"name":  "RandomResizedCrop", "params": {"size":  224}},
+			{"name":  "RandomRotation", "params": {"degrees":  30}},
+			{"name":  "RandomHorizontalFlip", "params": {"p":  0.5}},
+			{"name":  "ToTensor", "params": {}},
+			{"name":  "Normalize", "params": {"mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5]}},
+			{"name":  "RandomErasing", "params": {"p":  0.5}}
+		],
+		"val_test_transforms": [
+			{"name":  "ToTensor", "params": {}},
+			{"name":  "Normalize", "params": {"mean": [0.5, 0.5, 0.5], "std": [0.5, 0.5, 0.5]}}
 		]
 	},
 	"model": {

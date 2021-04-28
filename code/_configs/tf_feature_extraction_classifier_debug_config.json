@@ -1,0 +1,22 @@
+{
+	"data": {
+		"name": "dummy"
+	},
+	"model": {
+		"name": "tf_feature_extraction",
+		"network": {
+            "name": "alexnet",
+			"weights_path": "../input/models_weights/alexnet-owt-7be5be79.pth"
+		},
+		"feature_extraction": {
+			"layers_to_extract_features_from": [3, 8, 10],
+			"discretization": {"th_pos": 0.15, "th_neg":  -0.25}
+		},
+		"classifier": {
+			"name": "svm.SVC",
+			"params": {}
+		}
+	},
+	"manual_seed": 0,
+	"device": "cpu"
+}

@@ -1,6 +1,7 @@
 import torch
 import torchvision  # do not delete
 import torch.nn as nn
+
 from auxiliary_files.model_methods.model_operations import model_arq_to_json
 from models.types.classifier import ClassifierModel
 
@@ -44,17 +45,17 @@ class TransferLearningFineTuning(ClassifierModel):
         else:
             self.network.classifier.add_module('sigmoid', nn.Sigmoid())
 
-        # freeze layers if needed (only feature layers)
+        # freeze layers if needed (only feature layers)  # TODO update to not only feature layers
         left_to_frozen = network_config['frozen_layers']
         feature_layers = list(self.network.features)
         index = 0
         while left_to_frozen > 0 and index < len(feature_layers):
             for param in list(feature_layers[index].parameters()):
-                param.requires_grad = False
+                param.requires_grad = False  # TODO assure that is working
             left_to_frozen -= 1
             index += 1
 
-        # reinitialize last layers if needed (only classifier layers)
+        # reinitialize last layers if needed (only classifier layers)  # TODO update to not only classifier layers
         left_to_reinitialize = network_config['reinitialized_layers']
         classifier_layers = list(reversed(self.network.classifier))
         index = 0

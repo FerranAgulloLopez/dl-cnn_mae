@@ -19,32 +19,18 @@
 		"batch_size": 64
 	},
 	"model": {
-		"name": "tf_fine_tuning",
-		"transforms": {
-			"preprocess": [{"name": "WI", "type": "normal", "mean": 0, "std": 0.02}]
-		},
+		"name": "tf_feature_extraction",
 		"network": {
             "name": "vgg16",
-			"weights_path": "../input/models_weights/vgg16-397923af.pth",
-			"frozen_layers": 2,
-			"reinitialized_layers": 4,
-			"softmax": 1
+			"weights_path": "../input/models_weights/vgg16-397923af.pth"
 		},
-		"train_info": {
-			"number_epochs": 1,
-			"loss_function": {
-				"name": "DefaultClassifier",
-				"criterion": "binary_cross_entropy"
-			},
-			"optimizer": {
-				"name": "Adam",
-				"beta_1": 0.5,
-				"beta_2": 0.999,
-				"learning_rate": {
-					"value": 0.0001,
-					"dynamic": [0]
-				}
-			}
+		"feature_extraction": {
+			"layers_to_extract_features_from": [3, 6, 11, 15, 20, 23, 27, 29],
+			"discretization": {"th_pos": 0.15, "th_neg":  -0.25}
+		},
+		"classifier": {
+			"name": "svm.SVC",
+			"params": {}
 		}
 	},
 	"manual_seed": 0,

@@ -10,6 +10,7 @@ class DummyData(Data):
         super().__init__(config, device)
         values = np.zeros((100, 3, 256, 256))
         labels = np.zeros((100, 20))
+        labels[0, 2] = 1
         tensor_x = torch.from_numpy(values).float()
         tensor_y = torch.from_numpy(labels).float()
         self.data_loader = TensorDataset(tensor_x, tensor_y)

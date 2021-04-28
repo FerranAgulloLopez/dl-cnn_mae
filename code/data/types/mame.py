@@ -7,7 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
 from data.data import Data
-from auxiliary_files.data_methods.preprocessing import RandomRotation, GaussianBlur
+from auxiliary_files.data_methods.preprocessing import generate_transforms_array
 
 
 class MAMeDataset(Dataset):
@@ -49,43 +49,21 @@ class MAMe(Data):
                             index_col=0).iterrows())
         }
 
-        train_transformations = []
-        if 'train_transformations' in config:
-            for train_transformation in config['train_transformations']:
-                name = train_transformation['name']
-                if name == 'rotation':
-                    train_transformations.append(RandomRotation(degrees=train_transformation['degrees']))
-                elif name == 'horizontal_flip':
-                    train_transformations.append(transforms.RandomHorizontalFlip(p=train_transformation['p']))
-                elif name == 'crop':
-                    train_transformations.append(transforms.CenterCrop(size=train_transformation['size']))
-                    train_transformations.append(transforms.Resize(size=256))
-                elif name == 'blur':
-                    train_transformations.append(GaussianBlur(kernel_size=train_transformation['kernel_size'], sigma=(train_transformation['sigma'][0], train_transformation['sigma'][1])))
-        train_transformations.append(transforms.ToTensor())
-        train_transformations.append(transforms.Normalize((0.5, 0.5, 0.5),(0.5, 0.5, 0.5)))
-        if 'train_transformations' in config:
-            for train_transformation in config['train_transformations']:
-                name = train_transformation['name']
-                if name == 'erasing':
-                    train_transformations.append(transforms.RandomErasing(p=train_transformation['p']))
+        train_transforms = generate_transforms_array(config['train_transforms'])
+        val_test_transforms = generate_transforms_array(config['val_test_transforms'])
 
-
+        # create data loaders
         self.train_dataset = MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
                                     key=self.label_descriptions, root_dir=self.images_directory, split='train',
-                                    transform=transforms.Compose(train_transformations))
+                                    transform=transforms.Compose(train_transforms))
 
         self.val_dataset = MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
                                             key=self.label_descriptions, root_dir=self.images_directory, split='val',
-                                            transform=transforms.Compose([transforms.ToTensor(),
-                                                                          transforms.Normalize((0.5, 0.5, 0.5),
-                                                                                               (0.5, 0.5, 0.5))]))
+                                            transform=transforms.Compose(val_test_transforms))
 
         self.test_dataset = MAMeDataset(metadata_path=os.path.join(self.metadata_directory, self.metadata_file),
                                    key=self.label_descriptions, root_dir=self.images_directory, split='test',
-                                   transform=transforms.Compose([transforms.ToTensor(),
-                                                                 transforms.Normalize((0.5, 0.5, 0.5),
-                                                                                      (0.5, 0.5, 0.5))]))
+                                   transform=transforms.Compose(val_test_transforms))
 
     def get_train_loader(self) -> DataLoader:
         return DataLoader(dataset=self.train_dataset, shuffle=True, batch_size=self.batch_size, pin_memory=True)
