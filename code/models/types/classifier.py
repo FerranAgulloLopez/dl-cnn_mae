@@ -2,6 +2,7 @@ import sys
 import torch
 from time import time
 import numpy as np
+from sklearn import metrics
 
 from auxiliary_files.model_methods.loss_functions import select_loss_function
 from auxiliary_files.model_methods.model_operations import model_arq_to_json
@@ -65,8 +66,8 @@ class ClassifierModel(Model):
     # test the model
     def test(self, test_loader):
         self.test_loss = torch.from_numpy(np.zeros((1, 2))).to(self.device).detach()
-        self.output_test_labels = torch.from_numpy(np.zeros((self.number_samples[2], self.number_labels))).to(self.device).detach()
-        self.true_test_labels = torch.from_numpy(np.zeros((self.number_samples[2], self.number_labels))).to(self.device).detach()
+        self.output_test_labels = torch.zeros(self.number_samples[2]).to(self.device).detach()
+        self.true_test_labels = torch.zeros(self.number_samples[2]).to(self.device).detach()
         if not self.loss_function:
             self.loss_function = select_loss_function(self.train_info['loss_function'], self.device)
 
@@ -80,8 +81,14 @@ class ClassifierModel(Model):
         if self.device != 'cpu':
             self.train_loss = self.train_loss.to('cpu')
             self.val_loss = self.val_loss.to('cpu')
+            self.true_train_labels = self.true_train_labels.to('cpu')
+            self.output_train_labels = self.output_train_labels.to('cpu')
+            self.true_val_labels = self.true_val_labels.to('cpu')
+            self.output_val_labels = self.output_val_labels.to('cpu')
         np.save(self.output_path + '/train_loss', self.train_loss)
         np.save(self.output_path + '/val_loss', self.val_loss)
+        self.save_classification_results(self.output_path, 'train', self.true_train_labels.numpy(), self.output_train_labels.numpy())
+        self.save_classification_results(self.output_path, 'val', self.true_val_labels.numpy(), self.output_val_labels.numpy())
         with torch.no_grad():
             self.loss_function.visualize_total_losses_chart(visualize, 'train_val_losses_chart', self.output_path, 'Loss',
                                                             ('train_loss', self.train_loss[:,0].numpy()),
@@ -101,6 +108,7 @@ class ClassifierModel(Model):
         if self.device != 'cpu':
             self.test_loss = self.test_loss.to('cpu')
         np.save(self.output_path + '/test_loss', self.test_loss)
+        self.save_classification_results(self.output_path, 'test', self.true_test_labels, self.output_test_labels)
         with torch.no_grad():
             self.loss_function.visualize_total_losses_file('test_losses_file', self.output_path,
                                                            ('test_loss', self.test_loss[:,0].numpy(), True),
@@ -123,12 +131,12 @@ class ClassifierModel(Model):
         self.train_info = self.config['train_info']
         self.number_epochs = self.train_info['number_epochs']
         self.loss_function = select_loss_function(self.train_info['loss_function'], self.device)
-        self.train_loss = torch.from_numpy(np.zeros((self.number_epochs, 2))).to(self.device).detach()
-        self.val_loss = torch.from_numpy(np.zeros((self.number_epochs, 2))).to(self.device).detach()
-        self.output_train_labels = torch.from_numpy(np.zeros((self.number_samples[0], self.number_labels))).to(self.device).detach()
-        self.true_train_labels = torch.from_numpy(np.zeros((self.number_samples[0], self.number_labels))).to(self.device).detach()
-        self.output_val_labels = torch.from_numpy(np.zeros((self.number_samples[1], self.number_labels))).to(self.device).detach()
-        self.true_val_labels = torch.from_numpy(np.zeros((self.number_samples[1], self.number_labels))).to(self.device).detach()
+        self.train_loss = torch.zeros((self.number_epochs, 2)).to(self.device).detach()
+        self.val_loss = torch.zeros((self.number_epochs, 2)).to(self.device).detach()
+        self.output_train_labels = torch.zeros(self.number_samples[0]).to(self.device).detach()
+        self.true_train_labels = torch.zeros(self.number_samples[0]).to(self.device).detach()
+        self.output_val_labels = torch.zeros(self.number_samples[1]).to(self.device).detach()
+        self.true_val_labels = torch.zeros(self.number_samples[1]).to(self.device).detach()
         self.optimizer = select_optimizer(self.train_info['optimizer'], self.network)
         if self.train_info['optimizer']['learning_rate']['dynamic'][0] == 1:
             self.scheduler = select_scheduler(self.train_info['optimizer']['learning_rate']['dynamic'][1],
@@ -156,14 +164,12 @@ class ClassifierModel(Model):
 
             self.train_loss[number_epoch][0] = self.train_loss[number_epoch][0].add(loss.detach().view(1))  # update loss array
             self.output_train_labels[(index*train_loader.batch_size):(index*train_loader.batch_size + len(
-                train_values))] = output_labels.detach()  # save output labels of all the epoch (to compute accuracy)
+                train_values))] = torch.argmax(output_labels.detach(), 1)  # save output labels of all the epoch (to compute accuracy)
             self.true_train_labels[(index*train_loader.batch_size):(index*train_loader.batch_size + len(
-                train_values))] = train_labels.detach()  # save true labels of all the epoch (to compute accuracy)
+                train_values))] = torch.argmax(train_labels.detach(), 1)  # save true labels of all the epoch (to compute accuracy)
 
         self.train_loss[number_epoch][0] = self.train_loss[number_epoch][0].div(len(train_loader))  # update loss array
-        compressed_output_train_labels = torch.argmax(self.output_train_labels, 1)
-        compressed_true_train_labels = torch.argmax(self.true_train_labels, 1)
-        self.train_loss[number_epoch][1] = self.compute_accuracy(compressed_output_train_labels, compressed_true_train_labels)  # update accuracy array
+        self.train_loss[number_epoch][1] = self.compute_accuracy(self.output_train_labels, self.true_train_labels)  # update accuracy array
 
     # preform a not train epoch
     def not_train_epoch(self, number_epoch, data_loader, losses_array, output_labels_array, true_labels_array):
@@ -178,13 +184,17 @@ class ClassifierModel(Model):
                 loss = self.loss_function.run(output_labels, labels, number_epoch)
 
                 losses_array[number_epoch][0] = losses_array[number_epoch][0].add(loss.detach().view(1))  # update loss array
-                output_labels_array[(index*data_loader.batch_size):(index*data_loader.batch_size + len(values))] = output_labels.detach()  # save output labels of all the epoch (to compute accuracy)
-                true_labels_array[(index*data_loader.batch_size):(index*data_loader.batch_size + len(values))] = labels.detach()  # save true labels of all the epoch (to compute accuracy)
+                output_labels_array[(index*data_loader.batch_size):(index*data_loader.batch_size + len(values))] = torch.argmax(output_labels.detach(), 1)  # save output labels of all the epoch (to compute accuracy)
+                true_labels_array[(index*data_loader.batch_size):(index*data_loader.batch_size + len(values))] = torch.argmax(labels.detach(), 1)  # save true labels of all the epoch (to compute accuracy)
 
         losses_array[number_epoch][0] = losses_array[number_epoch][0].div(len(data_loader))  # update loss array
-        compressed_output_labels = torch.argmax(output_labels_array, 1)
-        compressed_true_labels = torch.argmax(true_labels_array, 1)
-        losses_array[number_epoch][1] = self.compute_accuracy(compressed_output_labels, compressed_true_labels)  # update accuracy array
+        losses_array[number_epoch][1] = self.compute_accuracy(output_labels_array, true_labels_array)  # update accuracy array
 
     def compute_accuracy(self, output_labels: torch.Tensor, true_labels: torch.Tensor):
         return torch.sum(output_labels == true_labels).item() / len(output_labels)
+
+    def save_classification_results(self, path, name, labels, predicted_labels):
+        print(name)
+        print(metrics.confusion_matrix(labels, predicted_labels))
+        print(metrics.classification_report(labels, predicted_labels))
+        np.save(path + '/' + name + '_predicted_labels', predicted_labels)

@@ -172,9 +172,3 @@ class TransferLearningFeatureExtraction(ClassifierModel):
 
     def predict_classifier(self, features):
         return self.classifier.predict(features)
-
-    def save_classification_results(self, path, name, labels, predicted_labels):
-        print(name)
-        print(metrics.confusion_matrix(labels, predicted_labels))
-        print(metrics.classification_report(labels, predicted_labels))
-        np.save(path + '/' + name + '_predicted_labels', predicted_labels)
