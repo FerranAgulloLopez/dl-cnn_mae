@@ -42,7 +42,7 @@ class TransferLearningFeatureExtraction(ClassifierModel):
         with torch.no_grad():
             # train
             init_time = time.time()
-            output_train_features, self.true_train_labels, self.train_stats = self.extract_features(train_loader)
+            output_train_features, self.true_train_labels, self.train_stats = self.extract_features(train_loader, self.number_samples[0])
             print('Elapsed time extracting train features:', time.time() - init_time, '; size:', output_train_features.shape)
 
             output_train_features = output_train_features.to('cpu').numpy()
@@ -53,7 +53,7 @@ class TransferLearningFeatureExtraction(ClassifierModel):
 
             # validate
             init_time = time.time()
-            output_val_features, self.true_val_labels, _ = self.extract_features(val_loader, stats = self.train_stats)
+            output_val_features, self.true_val_labels, _ = self.extract_features(val_loader, self.number_samples[1], stats = self.train_stats)
             print('Elapsed time extracting val features:', time.time() - init_time, '; size:', output_val_features.shape)
 
             output_val_features = output_val_features.to('cpu').numpy()
@@ -66,7 +66,7 @@ class TransferLearningFeatureExtraction(ClassifierModel):
     def test(self, test_loader):
         with torch.no_grad():
             init_time = time.time()
-            output_test_features, self.true_test_labels, _ = self.extract_features(test_loader, stats = self.train_stats)
+            output_test_features, self.true_test_labels, _ = self.extract_features(test_loader, self.number_samples[2], stats = self.train_stats)
             print('Elapsed time extracting test features:', time.time() - init_time, '; size:', output_test_features.shape)
 
             output_test_features = output_test_features.to('cpu').numpy()
@@ -132,9 +132,9 @@ class TransferLearningFeatureExtraction(ClassifierModel):
         # create classifier
         self.classifier = eval(classifier_config['name'])(**classifier_config['params'])  # select from sklearn models
 
-    def extract_features(self, data_loader, stats=torch.empty((0, 0))):
-        output_features = torch.zeros((self.number_samples[0], self.total_features)).to(self.device).detach().float()
-        true_labels_array = torch.zeros(self.number_samples[0]).to(self.device).detach().float()
+    def extract_features(self, data_loader, number_samples, stats=torch.empty((0, 0))):
+        output_features = torch.zeros((number_samples, self.total_features)).to(self.device).detach().float()
+        true_labels_array = torch.zeros(number_samples).to(self.device).detach().float()
 
         # extract features from dataset
         for index, (values, labels) in enumerate(data_loader, 0):  # iterate data loader
@@ -145,8 +145,8 @@ class TransferLearningFeatureExtraction(ClassifierModel):
             index_features = 0
             for feature_extraction_layer in self.feature_extraction_layers:
                 layer_output = feature_extraction_layer.feature
-                output_features[index:(index + values.shape[0]), index_features:(index_features + layer_output.shape[1])] = layer_output
-                index_features += layer_output.shape[0]
+                output_features[(index*data_loader.batch_size):(index*data_loader.batch_size + len(values)), index_features:(index_features + layer_output.shape[1])] = layer_output
+                index_features += layer_output.shape[1]
 
             # save true labels to compute metrics afterwards
             true_labels_array[(index*data_loader.batch_size):(index*data_loader.batch_size + len(values))] = torch.argmax(labels.detach(), 1)
