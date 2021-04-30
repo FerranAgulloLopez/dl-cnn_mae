@@ -5,9 +5,10 @@ import numpy as np
 import torch.nn as nn
 from sklearn import *  # do not delete
 
+from models.types.classifier import ClassifierModel
 from auxiliary_files.model_methods.nets import FeatureExtraction
 from auxiliary_files.model_methods.model_operations import model_arq_to_json, extract_model_layers
-from models.types.classifier import ClassifierModel
+from auxiliary_files.other_methods.util_functions import print_pretty_json
 
 
 class TransferLearningFeatureExtraction(ClassifierModel):
@@ -35,6 +36,13 @@ class TransferLearningFeatureExtraction(ClassifierModel):
     def prepare(self):
         self.network = self.network.float()
         self.network = self.network.to(self.device)
+
+    # show model information at the start of the log
+    def show_info(self):
+        print_pretty_json(self.config['network'])
+        print(self.classifier)
+        if self.transformer:
+            print(self.transformer)
 
     # train the model
     def train(self, train_loader, val_loader):
@@ -132,6 +140,12 @@ class TransferLearningFeatureExtraction(ClassifierModel):
         # create classifier
         self.classifier = eval(classifier_config['name'])(**classifier_config['params'])  # select from sklearn models
 
+        # create transformer if needed
+        if 'transformer' in classifier_config:
+            self.transformer = eval(classifier_config['transformer']['name'])(**classifier_config['transformer']['params'])  # select from sklearn transformers
+        else:
+            self.transformer = None
+
     def extract_features(self, data_loader, number_samples, stats=torch.empty((0, 0))):
         output_features = torch.zeros((number_samples, self.total_features)).to(self.device).detach().float()
         true_labels_array = torch.zeros(number_samples).to(self.device).detach().float()
@@ -167,8 +181,16 @@ class TransferLearningFeatureExtraction(ClassifierModel):
         return output_features, true_labels_array, stats
 
     def train_classifier(self, features, labels):
-        self.classifier.fit(features, labels)
-        return self.classifier.predict(features)
+        if self.transformer:
+            data = self.transformer.fit_transform(features)
+        else:
+            data = features
+        self.classifier.fit(data, labels)
+        return self.classifier.predict(data)
 
     def predict_classifier(self, features):
-        return self.classifier.predict(features)
+        if self.transformer:
+            data = self.transformer.transform(features)
+        else:
+            data = features
+        return self.classifier.predict(data)

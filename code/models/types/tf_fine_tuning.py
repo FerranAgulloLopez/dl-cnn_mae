@@ -51,7 +51,7 @@ class TransferLearningFineTuning(ClassifierModel):
         index = 0
         while left_to_frozen > 0 and index < len(feature_layers):
             for param in list(feature_layers[index].parameters()):
-                param.requires_grad = False  # TODO assure that is working
+                param.requires_grad = False
             left_to_frozen -= 1
             index += 1
 
