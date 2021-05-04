@@ -46,8 +46,16 @@ class DefaultClassifierLossFunction(LossFunction):
             self.criterion = nn.CrossEntropyLoss()
         else:
             raise Exception('Loss function criterion not recognized')
+
+        self.normalizer = None
+        if 'sigmoid' in config and config['sigmoid']:
+            self.normalizer = nn.Sigmoid()
+        if 'softmax' in config and config['softmax']:
+            self.normalizer = nn.Softmax(dim=1)
         
     def run(self, output_labels, true_labels, number_epoch):
+        if self.normalizer:
+            output_labels = self.normalizer(output_labels)
         if self.criterion_name != 'binary_cross_entropy':
             true_labels = torch.argmax(true_labels, 1)
         return self.criterion(output_labels, true_labels)

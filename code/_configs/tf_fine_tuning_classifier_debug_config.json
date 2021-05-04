@@ -10,19 +10,19 @@
 		"network": {
             "name": "alexnet",
 			"weights_path": "../input/models_weights/alexnet-owt-7be5be79.pth",
-			"frozen_layers": 20,
-			"reinitialized_layers": 4,
-			"softmax": 1
+			"frozen_layers": 109,
+			"reinitialized_layers": 9
 		},
 		"train_info": {
 			"number_epochs": 2,
 			"loss_function": {
 				"name": "DefaultClassifier",
-				"criterion": "binary_cross_entropy"
+				"criterion": "binary_cross_entropy",
+				"softmax": 1
 			},
 			"optimizer": {
 				"name": "AdamW",
-				"beta_1": 0.5,
+				"beta_1": 0.9,
 				"beta_2": 0.999,
 				"amsgrad": 0,
 				"learning_rate": {

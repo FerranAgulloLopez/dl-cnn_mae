@@ -38,7 +38,7 @@
 			},
 			"optimizer": {
 				"name": "Adam",
-				"beta_1": 0.5,
+				"beta_1": 0.9,
 				"beta_2": 0.999,
 				"learning_rate": {
 					"value": 0.0001,

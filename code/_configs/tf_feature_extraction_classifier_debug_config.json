@@ -13,8 +13,9 @@
 			"discretization": {"th_pos": 0.15, "th_neg":  -0.25}
 		},
 		"classifier": {
-			"name": "svm.SVC",
-			"params": {}
+			"name": "svm.LinearSVC",
+			"params": {},
+			"transformer": {"name":  "kernel_approximation.Nystroem", "params":  {}}
 		}
 	},
 	"manual_seed": 0,

@@ -2,7 +2,7 @@ import torch
 import torchvision  # do not delete
 import torch.nn as nn
 
-from auxiliary_files.model_methods.model_operations import model_arq_to_json
+from auxiliary_files.model_methods.model_operations import model_arq_to_json, extract_model_layers
 from models.types.classifier import ClassifierModel
 
 
@@ -35,31 +35,51 @@ class TransferLearningFineTuning(ClassifierModel):
         # load architecture and weights
         self.network = eval('torchvision.models.' + network_config['name'])()  # select from torchvision models
         self.network.load_state_dict(torch.load(network_config['weights_path']))  # load weights
+        layers = extract_model_layers(self.network)  # extract all layers in a list
 
         # change last layer output
-        self.network.classifier[-1] = nn.Linear(self.network.classifier[-1].in_features, self.number_labels)
+        self.change_last_layer_output(network_config['name'], self.network)
 
-        # add softmax/sigmoid
-        if network_config['softmax']:
-            self.network.classifier.add_module('softmax', nn.Softmax(dim=1))
-        else:
-            self.network.classifier.add_module('sigmoid', nn.Sigmoid())
-
-        # freeze layers if needed (only feature layers)  # TODO update to not only feature layers
+        # freeze initial layers if needed
         left_to_frozen = network_config['frozen_layers']
-        feature_layers = list(self.network.features)
         index = 0
-        while left_to_frozen > 0 and index < len(feature_layers):
-            for param in list(feature_layers[index].parameters()):
+        while left_to_frozen > 0 and index < len(layers):
+            for param in list(layers[index].parameters()):
                 param.requires_grad = False
             left_to_frozen -= 1
             index += 1
 
-        # reinitialize last layers if needed (only classifier layers)  # TODO update to not only classifier layers
+        # reinitialize last layers if needed
         left_to_reinitialize = network_config['reinitialized_layers']
-        classifier_layers = list(reversed(self.network.classifier))
+        layers = list(reversed(layers))
         index = 0
-        while left_to_reinitialize > 0 and index < len(classifier_layers):
-            self.preprocess_net(self.config['transforms']['preprocess'], classifier_layers[index])  # reinitialize layer
+        while left_to_reinitialize > 0 and index < len(layers):
+            self.preprocess_net(self.config['transforms']['preprocess'], layers[index])
             left_to_reinitialize -= 1
             index += 1
+
+    def change_last_layer_output(self, model_name, model):
+        if 'resnet' in model_name:
+            num_ftrs = model.fc.in_features
+            model.fc = nn.Linear(num_ftrs, self.number_labels)
+        elif 'alexnet' in model_name:
+            num_ftrs = model.classifier[6].in_features
+            model.classifier[6] = nn.Linear(num_ftrs, self.number_labels)
+        elif 'vgg' in model_name:
+            num_ftrs = model.classifier[6].in_features
+            model.classifier[6] = nn.Linear(num_ftrs, self.number_labels)
+        elif 'squeezenet' in model_name:
+            model.classifier[1] = nn.Conv2d(512, self.number_labels, kernel_size=(1, 1), stride=(1, 1))
+            model.num_classes = self.number_labels
+        elif 'densenet' in model_name:
+            num_ftrs = model.classifier.in_features
+            model.classifier = nn.Linear(num_ftrs, self.number_labels)
+        elif 'inception' in model_name:
+            # handle the auxilary net
+            num_ftrs = model.AuxLogits.fc.in_features
+            model.AuxLogits.fc = nn.Linear(num_ftrs, self.number_labels)
+            # handle the primary net
+            num_ftrs = model.fc.in_features
+            model.fc = nn.Linear(num_ftrs, self.number_labels)
+        else:
+            raise Exception('Unknown behaviour for changing the last layer output in this model')
