@@ -13,10 +13,10 @@
 			"softmax": 0
 		},
 		"train_info": {
-			"number_epochs": 2,
+			"number_epochs": 1,
 			"loss_function": {
 				"name": "DefaultClassifier",
-				"criterion": "binary_cross_entropy"
+				"criterion": "cross_entropy"
 			},
 			"optimizer": {
 				"name": "AdamW",

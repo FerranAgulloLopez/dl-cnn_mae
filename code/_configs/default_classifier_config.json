@@ -31,13 +31,11 @@
 			"number_epochs": 50,
 			"loss_function": {
 				"name": "DefaultClassifier",
-				"criterion": "binary_cross_entropy"
+				"criterion": "cross_entropy"
 			},
 			"optimizer": {
 				"name": "SGD",
 				"momentum": 0.9,
-				"beta_1": 0.9,
-				"beta_2": 0.999,
 				"learning_rate": {
 					"value": 0.01,
 					"dynamic": [0]

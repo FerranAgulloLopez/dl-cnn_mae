@@ -9,7 +9,7 @@ from auxiliary_files.model_methods.model_operations import model_arq_to_json
 from auxiliary_files.model_methods.nets import select_net
 from auxiliary_files.model_methods.optimizers import select_optimizer
 from auxiliary_files.model_methods.schedulers import select_scheduler
-from auxiliary_files.other_methods.util_functions import print_pretty_json
+from auxiliary_files.other_methods.util_functions import print_pretty_json, save_json
 from models.model import Model
 
 
@@ -196,5 +196,6 @@ class ClassifierModel(Model):
     def save_classification_results(self, path, name, labels, predicted_labels):
         print(name)
         print(metrics.confusion_matrix(labels, predicted_labels))
-        print(metrics.classification_report(labels, predicted_labels))
+        print(metrics.classification_report(labels, predicted_labels, digits=4))
+        save_json(path + '/' + name + '_classification_report', metrics.classification_report(labels, predicted_labels, output_dict=True))
         np.save(path + '/' + name + '_predicted_labels', predicted_labels)

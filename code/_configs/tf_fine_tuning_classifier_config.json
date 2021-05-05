@@ -27,14 +27,13 @@
             "name": "vgg16",
 			"weights_path": "../input/models_weights/vgg16-397923af.pth",
 			"frozen_layers": 2,
-			"reinitialized_layers": 4,
-			"softmax": 1
+			"reinitialized_layers": 4
 		},
 		"train_info": {
 			"number_epochs": 1,
 			"loss_function": {
 				"name": "DefaultClassifier",
-				"criterion": "binary_cross_entropy"
+				"criterion": "cross_entropy"
 			},
 			"optimizer": {
 				"name": "Adam",
