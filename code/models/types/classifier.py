@@ -107,6 +107,8 @@ class ClassifierModel(Model):
     def save_test_results(self, visualize, test_loader):
         if self.device != 'cpu':
             self.test_loss = self.test_loss.to('cpu')
+            self.true_test_labels = self.true_test_labels.to('cpu')
+            self.output_test_labels = self.output_test_labels.to('cpu')
         np.save(self.output_path + '/test_loss', self.test_loss)
         self.save_classification_results(self.output_path, 'test', self.true_test_labels, self.output_test_labels)
         with torch.no_grad():
