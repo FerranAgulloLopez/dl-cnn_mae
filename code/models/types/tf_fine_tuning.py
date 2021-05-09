@@ -35,7 +35,7 @@ class TransferLearningFineTuning(ClassifierModel):
         # load architecture and weights
         self.network = eval('torchvision.models.' + network_config['name'])()  # select from torchvision models
         self.network.load_state_dict(torch.load(network_config['weights_path']))  # load weights
-        layers = extract_model_layers(self.network)  # extract all layers in a list
+        layers = [layer_module for layer_name, layer_module in extract_model_layers(self.network).items() if len(list(layer_module.named_modules())) == 1]  # extract all layers in a list
 
         # change last layer output
         self.change_last_layer_output(network_config['name'], self.network)

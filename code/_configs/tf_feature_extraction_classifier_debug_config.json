@@ -5,17 +5,35 @@
 	"model": {
 		"name": "tf_feature_extraction",
 		"network": {
-            "name": "alexnet",
-			"weights_path": "../input/models_weights/alexnet-owt-7be5be79.pth"
+            "name": "resnet50",
+			"weights_path": "../input/models_weights/resnet50-0676ba61.pth"
 		},
 		"feature_extraction": {
-			"layers_to_extract_features_from": [3, 8, 10],
+			"layers_to_extract_features_from": [
+				"relu",
+				"layer1.0.relu",
+				"layer1.0",
+				"layer1.1.relu",
+				"layer1.1",
+				"layer2.0.relu",
+				"layer2.0",
+				"layer2.1.relu",
+				"layer2.1",
+				"layer3.0.relu",
+				"layer3.0",
+				"layer3.1.relu",
+				"layer3.1",
+				"layer4.0.relu",
+				"layer4.0",
+				"layer4.1.relu",
+				"layer4.1",
+				"fc"
+			],
 			"discretization": {"th_pos": 0.15, "th_neg":  -0.25}
 		},
 		"classifier": {
 			"name": "svm.LinearSVC",
-			"params": {},
-			"transformer": {"name":  "kernel_approximation.Nystroem", "params":  {}}
+			"params": {}
 		}
 	},
 	"manual_seed": 0,

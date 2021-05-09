@@ -1,12 +1,9 @@
 import time
 import torch
 import torchvision  # do not delete
-import numpy as np
-import torch.nn as nn
 from sklearn import *  # do not delete
 
 from models.types.classifier import ClassifierModel
-from auxiliary_files.model_methods.nets import FeatureExtraction
 from auxiliary_files.model_methods.model_operations import model_arq_to_json, extract_model_layers
 from auxiliary_files.other_methods.util_functions import print_pretty_json
 
@@ -106,33 +103,33 @@ class TransferLearningFeatureExtraction(ClassifierModel):
         self.network.load_state_dict(torch.load(network_config['weights_path']))  # load weights
 
         # modify the network with modules inside it to extract features from
-        self.total_features = 0
-        last_layer_features = 0
-        layers = extract_model_layers(self.network)
-        layers_to_extract_features_from = set(self.layers_to_extract_features_from)
-        self.feature_extraction_layers = []
-        index = 0
-        for key, module in self.network._modules.items():
-            if isinstance(module, nn.Sequential):
-                new_sequential = nn.Sequential()
-                for layer in list(module):
-                    new_sequential.add_module(str(index), layer)
-
-                    if isinstance(layer, nn.Conv2d):
-                        last_layer_features = layer.out_channels
-                    elif isinstance(layer, nn.Linear):
-                        last_layer_features = layer.out_features
-
-                    if index in layers_to_extract_features_from:
-                        feature_extraction_layer = FeatureExtraction()
-                        new_sequential.add_module('feature_extractor_' + str(index), feature_extraction_layer)
-                        self.feature_extraction_layers.append(feature_extraction_layer)
-                        self.total_features += last_layer_features
-                    index += 1
-                self.network._modules[key] = new_sequential
+        network_layers = extract_model_layers(self.network)
+        self.features = self.Features()
+        for layer in self.layers_to_extract_features_from:
+            if layer in network_layers:
+                network_layers[layer].register_forward_hook(self.features)
             else:
-                layers.append(module)
-                index += 1
+                raise Exception('Layer ' + str(layer) + ' not recognized')
+
+    class Features:
+        def __init__(self):
+            self.data = []
+            self.size = 0
+
+        def __call__(self, module, module_in, module_out):
+            if len(module_out.shape) > 2:
+                # do spatial average pooling if it is a convolutional layer
+                output = torch.mean(torch.mean(module_out, dim=2), dim=2).detach().clone()
+            else:
+                # nothing elsewhere
+                output = module_out.detach().clone()
+
+            self.size += output.shape[1]
+            self.data.append(output)
+
+        def clear(self):
+            self.data = []
+            self.size = 0
 
     def load_classifier(self):
         classifier_config = self.config['classifier']
@@ -147,7 +144,8 @@ class TransferLearningFeatureExtraction(ClassifierModel):
             self.transformer = None
 
     def extract_features(self, data_loader, number_samples, stats=torch.empty((0, 0))):
-        output_features = torch.zeros((number_samples, self.total_features)).to(self.device).detach().float()
+        output_features = None
+        output_features_init = False
         true_labels_array = torch.zeros(number_samples).to(self.device).detach().float()
 
         # extract features from dataset
@@ -156,11 +154,15 @@ class TransferLearningFeatureExtraction(ClassifierModel):
             self.network(values)
 
             # group layer outputs
+            if not output_features_init:
+                output_features = torch.zeros((number_samples, self.features.size)).to(self.device).detach().float()
+                output_features_init = True
             index_features = 0
-            for feature_extraction_layer in self.feature_extraction_layers:
-                layer_output = feature_extraction_layer.feature
-                output_features[(index*data_loader.batch_size):(index*data_loader.batch_size + len(values)), index_features:(index_features + layer_output.shape[1])] = layer_output
-                index_features += layer_output.shape[1]
+            for layer_features in self.features.data:
+                output_features[(index*data_loader.batch_size):(index*data_loader.batch_size + len(values)), index_features:(index_features + layer_features.shape[1])] = layer_features
+                index_features += layer_features.shape[1]
+
+            self.features.clear()
 
             # save true labels to compute metrics afterwards
             true_labels_array[(index*data_loader.batch_size):(index*data_loader.batch_size + len(values))] = torch.argmax(labels.detach(), 1)

@@ -21,22 +21,6 @@ class PrintLayer(nn.Module):
         return x
 
 
-# To do feature extraction
-class FeatureExtraction(nn.Module):
-    def __init__(self):
-        super(FeatureExtraction, self).__init__()
-        self.feature = None
-
-    def forward(self, x):
-        if len(x.shape) > 2:
-            # do spatial average pooling if it is a convolutional layer
-            self.feature = torch.mean(torch.mean(x, dim=2), dim=2).clone()
-        else:
-            # nothing elsewhere
-            self.feature = x.clone()
-        return x
-
-
 class baseline_256x256(nn.Module):
     def __init__(self, config, data_shape):
         super(baseline_256x256, self).__init__()
