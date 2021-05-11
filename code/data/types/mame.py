@@ -40,6 +40,8 @@ class MAMe(Data):
             self.metadata_file = 'MAMe_dataset.csv'
         elif config['version'] == 'toy':
             self.metadata_file = 'MAMe_toy_dataset.csv'
+        elif config['version'] == 'crops':
+            self.metadata_file = 'MAMe_crops_dataset.csv'
         else:
             raise NotImplementedError('Dataset version not implemented')
         self.label_descriptions = {
