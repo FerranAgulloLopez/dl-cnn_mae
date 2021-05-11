@@ -173,7 +173,7 @@ class TransferLearningFeatureExtraction(ClassifierModel):
             stats[0] = torch.mean(output_features, dim=0)
             stats[1] = torch.std(output_features, dim=0)
             stats[1][stats[1] == 0] = 1
-        output_features = torch.div(output_features - stats[0], stats[1], out=torch.zeros_like(output_features))
+        output_features = torch.div(output_features - stats[0], stats[1])
 
         # discretize
         output_features[output_features > self.th_pos] = 1
